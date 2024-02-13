@@ -53,6 +53,13 @@ Globals:
 
 Mappings:
   EnvironmentConfiguration:
+    dev:
+      opBaseUrl: https://oidc.sandpit.account.gov.uk/
+      stubUrl: https://rp-dev.build.stubs.account.gov.uk
+      docAppStubUrl: https://doc-app-rp-dev.build.stubs.account.gov.uk
+      myAccountUrl: https://home.dev.account.gov.uk
+      clientId: KxpWnTPIMK3GIuLY6YXHuRl7nPYvDOgB
+      docAppClientId: OyjIjatiwdnMtP4eX2gPpFhnLfN2kO9f
     build:
       opBaseUrl: https://oidc.build.account.gov.uk/
       stubUrl: https://rp-build.build.stubs.account.gov.uk
