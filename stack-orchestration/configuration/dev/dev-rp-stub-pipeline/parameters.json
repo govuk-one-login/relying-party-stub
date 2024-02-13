@@ -1,0 +1,38 @@
+[
+  {
+    "ParameterKey": "ContainerSignerKmsKeyArn",
+    "ParameterValue": "arn:aws:kms:eu-west-2:616199614141:key/d0d44be9-b8c2-4bff-b3d0-9c03b0273350"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "GitHubRepositoryName",
+    "ParameterValue": "none"
+  },
+  {
+    "ParameterKey": "IncludePromotion",
+    "ParameterValue": "No"
+  },
+  {
+    "ParameterKey": "OneLoginRepositoryName",
+    "ParameterValue": "relying-party-stub"
+  },
+  {
+    "ParameterKey": "SAMStackName",
+    "ParameterValue": "dev-rp-stub"
+  },
+  {
+    "ParameterKey": "SigningProfileArn",
+    "ParameterValue": "arn:aws:signer:eu-west-2:616199614141:/signing-profiles/SigningProfile_82hlIhUN3wSY"
+  },
+  {
+    "ParameterKey": "SigningProfileVersionArn",
+    "ParameterValue": "arn:aws:signer:eu-west-2:616199614141:/signing-profiles/SigningProfile_82hlIhUN3wSY/EFs2yWnYzD"
+  },
+  {
+    "ParameterKey": "VpcStackName",
+    "ParameterValue": "vpc"
+  }
+]
