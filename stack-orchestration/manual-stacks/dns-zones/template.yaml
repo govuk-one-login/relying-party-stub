@@ -1,0 +1,188 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >-
+  All the DNS Hosted Zones for the Orchestration Stubs.
+Parameters:
+  Environment:
+    Description: The name of the environment to deploy to
+    Type: String
+    AllowedValues:
+      - dev
+      - build
+      - staging
+      - integration
+      - production
+
+Conditions:
+  IsProduction: !Equals [ !Ref Environment, production ]
+  IsStaging: !Equals [ !Ref Environment, staging]
+
+Mappings:
+  EnvironmentConfiguration:
+    dev:
+      rpDomainName: rp-dev.build.stubs.account.gov.uk
+      docAppRpDomainName: doc-app-rp-dev.build.stubs.account.gov.uk
+    build:
+      rpDomainName: rp-build.build.stubs.account.gov.uk
+      docAppRpDomainName: doc-app-rp-build.build.stubs.account.gov.uk
+    staging:
+      rpDomainName: rp-staging.build.stubs.account.gov.uk
+      docAppRpDomainName: doc-app-rp-staging.build.stubs.account.gov.uk
+    integration:
+      rpDomainName: rp-integration.build.stubs.account.gov.uk
+      docAppRpDomainName: doc-app-rp-integration.build.stubs.account.gov.uk
+    production:
+      rpDomainName: rp.stubs.account.gov.uk
+      docAppRpDomainName: doc-app-rp.build.stubs.account.gov.uk
+
+Resources:
+  RpStubCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !FindInMap [ EnvironmentConfiguration, !Ref Environment, rpDomainName ]
+      DomainValidationOptions:
+        - DomainName: !FindInMap [ EnvironmentConfiguration, !Ref Environment, rpDomainName ]
+          HostedZoneId: !If
+            - IsProduction
+            - !ImportValue RootPublicHostedZoneId
+            - !ImportValue BuildPublicHostedZoneId
+      ValidationMethod: DNS
+      CertificateTransparencyLoggingPreference: ENABLED
+
+  RpStubApiDomain:
+    Type: AWS::ApiGatewayV2::DomainName
+    Properties:
+      DomainName: !If
+        - IsProduction
+        - rp.stubs.account.gov.uk
+        - !Sub rp-${Environment}.build.stubs.account.gov.uk
+      DomainNameConfigurations:
+        - CertificateArn: !Ref RpStubCertificate
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+
+  RpStubApiMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Properties:
+      DomainName: !If
+        - IsProduction
+        - rp.stubs.account.gov.uk
+        - !Sub rp-${Environment}.build.stubs.account.gov.uk
+      ApiId:
+        Fn::ImportValue: !Sub RpApiGateway-${Environment}
+      Stage: "$default"
+    DependsOn:
+      - RpStubApiDomain
+
+  RpStubDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Type: A
+      Name: !If
+        - IsProduction
+        - rp.stubs.account.gov.uk
+        - !Sub rp-${Environment}.build.stubs.account.gov.uk
+      HostedZoneId: !If
+        - IsProduction
+        - !ImportValue RootPublicHostedZoneId
+        - !ImportValue BuildPublicHostedZoneId
+      AliasTarget:
+        DNSName: !GetAtt RpStubApiDomain.RegionalDomainName
+        HostedZoneId: !GetAtt RpStubApiDomain.RegionalHostedZoneId
+
+  DocAppRpStubCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !FindInMap [ EnvironmentConfiguration, !Ref Environment, docAppRpDomainName ]
+      DomainValidationOptions:
+        - DomainName: !FindInMap [ EnvironmentConfiguration, !Ref Environment, docAppRpDomainName ]
+          HostedZoneId: !If
+            - IsProduction
+            - !ImportValue RootPublicHostedZoneId
+            - !ImportValue BuildPublicHostedZoneId
+      ValidationMethod: DNS
+      CertificateTransparencyLoggingPreference: ENABLED
+
+  DocAppRpStubApiDomain:
+    Type: AWS::ApiGatewayV2::DomainName
+    Properties:
+      DomainName: !If
+        - IsProduction
+        - doc-app-rp.stubs.account.gov.uk
+        - !Sub doc-app-rp-${Environment}.build.stubs.account.gov.uk
+      DomainNameConfigurations:
+        - CertificateArn: !Ref DocAppRpStubCertificate
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+
+  DocAppRpStubApiMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Properties:
+      DomainName: !If
+        - IsProduction
+        - doc-app-rp.stubs.account.gov.uk
+        - !Sub doc-app-rp-${Environment}.build.stubs.account.gov.uk
+      ApiId:
+        Fn::ImportValue: !Sub DocAppApiGateway-${Environment}
+      Stage: "$default"
+    DependsOn:
+      - DocAppRpStubApiDomain
+
+  DocAppRpStubDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Type: A
+      Name: !If
+        - IsProduction
+        - doc-app-rp.stubs.account.gov.uk
+        - !Sub doc-app-rp-${Environment}.build.stubs.account.gov.uk
+      HostedZoneId: !If
+        - IsProduction
+        - !ImportValue RootPublicHostedZoneId
+        - !ImportValue BuildPublicHostedZoneId
+      AliasTarget:
+        DNSName: !GetAtt DocAppRpStubApiDomain.RegionalDomainName
+        HostedZoneId: !GetAtt DocAppRpStubApiDomain.RegionalHostedZoneId
+
+  PerfTestRpStubCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: IsStaging
+    Properties:
+      DomainName: perf-test-rp-staging.build.stubs.account.gov.uk
+      DomainValidationOptions:
+        - DomainName: perf-test-rp-staging.build.stubs.account.gov.uk
+          HostedZoneId: !ImportValue BuildPublicHostedZoneId
+      ValidationMethod: DNS
+      CertificateTransparencyLoggingPreference: ENABLED
+
+  PerfTestRpStubApiDomain:
+    Type: AWS::ApiGatewayV2::DomainName
+    Condition: IsStaging
+    Properties:
+      DomainName: perf-test-rp-staging.build.stubs.account.gov.uk
+      DomainNameConfigurations:
+        - CertificateArn: !Ref PerfTestRpStubCertificate
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+
+  PerfTestRpStubApiMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Condition: IsStaging
+    Properties:
+      DomainName: perf-test-rp-staging.build.stubs.account.gov.uk
+      ApiId:
+        Fn::ImportValue: !Sub PerfTestRpApiGateway-${Environment}
+      Stage: "$default"
+    DependsOn:
+      - PerfTestRpStubApiDomain
+
+  PerfTestRpStubDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: IsStaging
+    Properties:
+      Type: A
+      Name: perf-test-rp-staging.build.stubs.account.gov.uk
+      HostedZoneId: BuildPublicHostedZoneId
+      AliasTarget:
+        DNSName: !GetAtt PerfTestRpStubApiDomain.RegionalDomainName
+        HostedZoneId: !GetAtt PerfTestRpStubApiDomain.RegionalHostedZoneId
