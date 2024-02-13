@@ -9,7 +9,7 @@ export AWS_PAGER=""
 
 ## Provision ECR
 
-if [ $ENVIRONMENT == "dev" || $ENVIRONMENT == "build" ]
+if [[ $ENVIRONMENT == "dev" || $ENVIRONMENT == "build" ]]
 then
   $PROVISION_COMMAND "$ENVIRONMENT" "$ENVIRONMENT-rp-stub-ecr" container-image-repository LATEST
 fi
