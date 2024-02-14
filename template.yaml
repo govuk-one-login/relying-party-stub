@@ -1442,6 +1442,9 @@ Outputs:
     Export:
       Name: !Sub DocAppApiGateway-${Environment}
   PerfTestApiId:
-    Value: !Ref PerfTestApiGateway
+    Value: !If
+      - IsStaging
+      - !Ref PerfTestApiGateway
+      - "no-value"
     Export:
       Name: !Sub PerfTestApiGateway-${Environment}
