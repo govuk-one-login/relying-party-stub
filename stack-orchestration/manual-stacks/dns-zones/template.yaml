@@ -171,7 +171,7 @@ Resources:
     Properties:
       DomainName: perf-test-rp-staging.build.stubs.account.gov.uk
       ApiId:
-        Fn::ImportValue: !Sub PerfTestRpApiGateway-${Environment}
+        Fn::ImportValue: !Sub PerfTestApiGateway-${Environment}
       Stage: "$default"
     DependsOn:
       - PerfTestRpStubApiDomain
@@ -182,7 +182,7 @@ Resources:
     Properties:
       Type: A
       Name: perf-test-rp-staging.build.stubs.account.gov.uk
-      HostedZoneId: BuildPublicHostedZoneId
+      HostedZoneId: !ImportValue BuildPublicHostedZoneId
       AliasTarget:
         DNSName: !GetAtt PerfTestRpStubApiDomain.RegionalDomainName
         HostedZoneId: !GetAtt PerfTestRpStubApiDomain.RegionalHostedZoneId
