@@ -21,7 +21,6 @@ on:
 jobs:
   docker-build-and-push:
     name: Docker build, push and deploy
-    needs: run-checks
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
