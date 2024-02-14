@@ -1,14 +1,10 @@
-name: Run checks and deploy
+name: Deploy dev
 
 permissions:
   id-token: write
   contents: read
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+on: workflow_dispatch
 
 jobs:
   run-checks:
@@ -19,10 +15,10 @@ jobs:
   deploy:
     uses: ./.github/workflows/deploy.yml
     with:
-      BASE_IMAGE_TAG: rp-stub
+      BASE_IMAGE_TAG: rp-stub-dev
     secrets:
       GH_ACTIONS_ROLE_ARN: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
       CONTAINER_SIGNER_KMS_KEY: ${{ secrets.CONTAINER_SIGNER_KMS_KEY }}
-      ECR_REPO: ${{ secrets.ECR_REPOSITORY }}
-      ARTIFACT_SOURCE_BUCKET: ${{ secrets.ARTIFACT_SOURCE_BUCKET_NAME }}
+      ECR_REPO: ${{ secrets.DEV_ECR_REPOSITORY }}
+      ARTIFACT_SOURCE_BUCKET: ${{ secrets.DEV_ARTIFACT_SOURCE_BUCKET_NAME }}
       SIGNING_PROFILE_NAME: ${{ secrets.SIGNING_PROFILE_NAME }}
