@@ -39,6 +39,11 @@ Conditions:
     Fn::Equals:
       - !Ref Environment
       - staging
+  PipeLogsToSplunk:
+    Fn::Not:
+      - Fn::Equals:
+          - !Ref Environment
+          - build
 
 Globals:
   Function:
@@ -372,6 +377,15 @@ Resources:
       RetentionInDays: 90
       KmsKeyId: !GetAtt KmsKey.Arn
 
+  TaskLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: PipeLogsToSplunk
+    DependsOn:
+      - TaskLogGroup
+    Properties:
+      LogGroupName: !Sub /aws/ecs/${AWS::StackName}
+      DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+
   TaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -457,6 +471,15 @@ Resources:
       LogGroupName: !Sub /aws/ecs/${AWS::StackName}DocApp
       RetentionInDays: 90
       KmsKeyId: !GetAtt KmsKey.Arn
+
+  DocAppTaskLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: PipeLogsToSplunk
+    DependsOn:
+      - DocAppTaskLogGroup
+    Properties:
+      LogGroupName: !Sub /aws/ecs/${AWS::StackName}DocApp
+      DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
 
   DocAppTaskExecutionRole:
     Type: AWS::IAM::Role
@@ -1045,6 +1068,15 @@ Resources:
       RetentionInDays: 90
       KmsKeyId: !GetAtt KmsKey.Arn
 
+  ApiGatewayAccessLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: PipeLogsToSplunk
+    DependsOn:
+      - ApiGatewayAccessLogsGroup
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-ApiGatewayAccessLogsGroup
+      DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+
   ApiGatewayLambdaFunctionAuthorizer:
     Type: AWS::Serverless::Function
     Properties:
@@ -1169,6 +1201,15 @@ Resources:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-DocAppApiGatewayAccessLogsGroup
       RetentionInDays: 90
       KmsKeyId: !GetAtt KmsKey.Arn
+
+  DocAppApiGatewayAccessLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Condition: PipeLogsToSplunk
+    DependsOn:
+      - DocAppApiGatewayAccessLogsGroup
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-DocAppApiGatewayAccessLogsGroup
+      DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
 
   DocAppApiGatewayAuthorizer:
     Type: AWS::ApiGatewayV2::Authorizer
