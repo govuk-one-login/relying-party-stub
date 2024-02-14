@@ -18,7 +18,7 @@ jobs:
     with:
       BASE_IMAGE_TAG: rp-stub-dev
     secrets:
-      GH_ACTIONS_ROLE_ARN: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.DEV_GH_ACTIONS_ROLE_ARN }}
       CONTAINER_SIGNER_KMS_KEY: ${{ secrets.CONTAINER_SIGNER_KMS_KEY }}
       ECR_REPO: ${{ secrets.DEV_ECR_REPOSITORY }}
       ARTIFACT_SOURCE_BUCKET: ${{ secrets.DEV_ARTIFACT_SOURCE_BUCKET_NAME }}
