@@ -40,7 +40,8 @@ or [here](https://github.com/govuk-one-login/ipv-stubs-common-infra/blob/main/ut
 ## Deploying a new copy of the stub
 
 At the moment, to deploy a new copy of the stub you should duplicate the resources in the template (except the lambda authorizer,
-KMS key and Fargate cluster resources). You can see any example of how this is done by looking at the Performance Testing resources.
+KMS key and Fargate cluster resources). You can see any example of how this is done by looking at the Performance Testing resources
+in `template.yaml` in the root directory.
 
 If you would like to deploy a new copy of the stub, you'll need to add it to the client registry for the relevant environment.
 The way this is currently done is by adding a DynamoDB entry to the terraform in the `authentication-api` repository, in
