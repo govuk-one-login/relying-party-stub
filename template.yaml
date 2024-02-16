@@ -39,11 +39,6 @@ Conditions:
     Fn::Equals:
       - !Ref Environment
       - staging
-  PipeLogsToSplunk:
-    Fn::Not:
-      - Fn::Equals:
-          - !Ref Environment
-          - build
 
 Globals:
   Function:
@@ -379,7 +374,6 @@ Resources:
 
   TaskLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: PipeLogsToSplunk
     DependsOn:
       - TaskLogGroup
     Properties:
@@ -474,7 +468,6 @@ Resources:
 
   DocAppTaskLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: PipeLogsToSplunk
     DependsOn:
       - DocAppTaskLogGroup
     Properties:
@@ -1070,7 +1063,6 @@ Resources:
 
   ApiGatewayAccessLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: PipeLogsToSplunk
     DependsOn:
       - ApiGatewayAccessLogsGroup
     Properties:
@@ -1204,7 +1196,6 @@ Resources:
 
   DocAppApiGatewayAccessLogGroupSubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
-    Condition: PipeLogsToSplunk
     DependsOn:
       - DocAppApiGatewayAccessLogsGroup
     Properties:
