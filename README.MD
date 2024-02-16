@@ -39,14 +39,14 @@ or [here](https://github.com/govuk-one-login/ipv-stubs-common-infra/blob/main/ut
 
 ## Deploying a new copy of the stub
 
-At the moment, to deploy a new copy of the stub you should duplicate the resources in the template (except the lambda authorizer,
+At the moment, to deploy a new copy of the stub you should create new copies of the resources in the template (except the lambda authorizer,
 KMS key and Fargate cluster resources). You can see any example of how this is done by looking at the Performance Testing resources
 in `template.yaml` in the root directory.
 
 If you would like to deploy a new copy of the stub, you'll need to add it to the client registry for the relevant environment.
 The way this is currently done is by adding a DynamoDB entry to the terraform in the `authentication-api` repository, in
 the file `{environment}-stub-clients.tfvar` for all environments except dev (for example [for build](https://github.com/govuk-one-login/authentication-api/blob/2e2b4317f4cb0272f74473149aff730bbc844650/ci/terraform/shared/build-stub-clients.tfvars#L101)).
-For the dev environment, add an entry [here](https://github.com/govuk-one-login/authentication-api/blob/7dfd3fdeed4cb9358c234d95ee0e0ea4852ca57d/ci/terraform/shared/sandpit.tfvars#L9).
+For the dev environment, add an entry [here](https://github.com/govuk-one-login/authentication-api/blob/7dfd3fdeed4cb9358c234d95ee0e0ea4852ca57d/ci/terraform/shared/sandpit.tfvars#L9). If `test_client` is set to true, notifications are not sent through Notify.
 
 Once you deploy this terraform, find the terraform state file in S3 for the shared module for the relevant environment.
 Take a look at the outputs of this file, specifically `stub_rp_client_credentials`, and you'll find the private key for
@@ -56,3 +56,8 @@ You can check you have the right format as it will start with `-----BEGIN PRIVAT
 Note that when you're deploying a new copy of the stub for the first time, ECS will not deploy until all secrets have a value set - 
 ie you have a set a value for the private key in secrets manager, so you will have to fetch this private key during the deployment, after the
 secrets manager resource has been created.
+
+You'll probably also want to set up DNS for the stub. This is set up in a different template, as it can't currently be
+deployed with secure pipelines. The template for this is in `stack-orchestration/manual-stacks/dns-zones`. Once you've
+updated, redeploy with the instructions in the adjacent README. Note that this should be deployed after the resources
+are deployed.
