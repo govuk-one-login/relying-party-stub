@@ -16,6 +16,7 @@ Parameters:
 Conditions:
   IsProduction: !Equals [ !Ref Environment, production ]
   IsStaging: !Equals [ !Ref Environment, staging]
+  IsBuild: !Equals [ !Ref Environment, build]
 
 Mappings:
   EnvironmentConfiguration:
@@ -171,7 +172,7 @@ Resources:
     Properties:
       DomainName: perf-test-rp-staging.build.stubs.account.gov.uk
       ApiId:
-        Fn::ImportValue: !Sub PerfTestApiGateway-${Environment}
+        Fn::ImportValue: !Sub TestClientApiGateway-${Environment}
       Stage: "$default"
     DependsOn:
       - PerfTestRpStubApiDomain
@@ -186,3 +187,46 @@ Resources:
       AliasTarget:
         DNSName: !GetAtt PerfTestRpStubApiDomain.RegionalDomainName
         HostedZoneId: !GetAtt PerfTestRpStubApiDomain.RegionalHostedZoneId
+
+  AcceptanceTestRpStubCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: IsBuild
+    Properties:
+      DomainName: acceptance-test-rp-build.build.stubs.account.gov.uk
+      DomainValidationOptions:
+        - DomainName: acceptance-test-rp-build.build.stubs.account.gov.uk
+          HostedZoneId: !ImportValue BuildPublicHostedZoneId
+      ValidationMethod: DNS
+      CertificateTransparencyLoggingPreference: ENABLED
+
+  AcceptanceTestRpStubApiDomain:
+    Type: AWS::ApiGatewayV2::DomainName
+    Condition: IsBuild
+    Properties:
+      DomainName: acceptance-test-rp-build.build.stubs.account.gov.uk
+      DomainNameConfigurations:
+        - CertificateArn: !Ref AcceptanceTestRpStubCertificate
+          EndpointType: REGIONAL
+          SecurityPolicy: TLS_1_2
+
+  AcceptanceTestRpStubApiMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Condition: IsBuild
+    Properties:
+      DomainName: acceptance-test-rp-build.build.stubs.account.gov.uk
+      ApiId:
+        Fn::ImportValue: !Sub TestClientApiGateway-${Environment}
+      Stage: "$default"
+    DependsOn:
+      - PerfTestRpStubApiDomain
+
+  AcceptanceTestRpStubDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: IsBuild
+    Properties:
+      Type: A
+      Name: acceptance-test-rp-build.build.stubs.account.gov.uk
+      HostedZoneId: !ImportValue BuildPublicHostedZoneId
+      AliasTarget:
+        DNSName: !GetAtt AcceptanceTestRpStubApiDomain.RegionalDomainName
+        HostedZoneId: !GetAtt AcceptanceTestRpStubApiDomain.RegionalHostedZoneId
