@@ -39,6 +39,14 @@ Conditions:
     Fn::Equals:
       - !Ref Environment
       - staging
+  IsBuild:
+    Fn::Equals:
+      - !Ref Environment
+      - build
+  GenerateTestClient:
+    Fn::Or:
+      - IsBuild
+      - IsStaging
 
 Globals:
   Function:
@@ -67,6 +75,8 @@ Mappings:
       myAccountUrl: https://home.build.account.gov.uk
       clientId: k63SkCCUsoocQhowC9wt6X5R7A8NakJB
       docAppClientId: 0Aqr6Oodr9dOUz8jDC5RqsWJKTtMsGG9
+      testClientStubUrl: https://test-client-rp-build.build.stubs.account.gov.uk
+      testClientClientId:
     staging:
       opBaseUrl: https://oidc.staging.account.gov.uk/
       stubUrl: https://rp-staging.build.stubs.account.gov.uk
@@ -245,7 +255,7 @@ Resources:
 
   TestClientContainerService:
     Type: AWS::ECS::Service
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       Cluster: !Ref FargateCluster
       TaskDefinition: !Ref TestClientTaskDefinition
@@ -277,7 +287,7 @@ Resources:
 
   TestClientContainerServiceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       GroupDescription: Security Group to access the Container Service
       GroupName: !Join
@@ -489,7 +499,7 @@ Resources:
 
   TestClientTaskDefinition:
     Type: AWS::ECS::TaskDefinition
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       ContainerDefinitions:
         - Name: !Sub ${AWS::StackName}-TestClientECSServiceTaskDefinition
@@ -540,7 +550,7 @@ Resources:
 
   TestClientTaskLogGroup:
     Type: AWS::Logs::LogGroup
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       LogGroupName: !Sub /aws/ecs/${AWS::StackName}TestClient
       RetentionInDays: 90
@@ -548,7 +558,7 @@ Resources:
 
   TestClientTaskExecutionRole:
     Type: AWS::IAM::Role
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -842,7 +852,7 @@ Resources:
 
   TestClientApplicationLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       SecurityGroups:
         - !GetAtt TestClientApplicationLoadBalancerSecurityGroup.GroupId
@@ -865,7 +875,7 @@ Resources:
 
   TestClientApplicationLoadBalancerTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       HealthCheckPort: traffic-port
       HealthCheckProtocol: HTTP
@@ -894,7 +904,7 @@ Resources:
 
   TestClientApplicationLoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       # checkov:skip=CKV_AWS_2:Certificate generation must be resolved before the listener can use HTTPS.
       # checkov:skip=CKV_AWS_103:The load balancer cannot use TLS v1.2 until HTTPS is enabled.
@@ -907,7 +917,7 @@ Resources:
 
   TestClientApplicationLoadBalancerListenerRule:
     Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       Actions:
         - Type: forward
@@ -926,7 +936,7 @@ Resources:
 
   TestClientApplicationLoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       GroupDescription: Security Group for the Test Client Application Load Balancer
       GroupName: !Join
@@ -956,7 +966,7 @@ Resources:
 
   TestClientApplicationLoadBalancerSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       GroupId: !GetAtt TestClientApplicationLoadBalancerSecurityGroup.GroupId
       CidrIp:
@@ -968,7 +978,7 @@ Resources:
 
   TestClientApplicationLoadBalancerSecurityGroupEgress:
     Type: AWS::EC2::SecurityGroupEgress
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       GroupId: !GetAtt TestClientApplicationLoadBalancerSecurityGroup.GroupId
       DestinationSecurityGroupId: !GetAtt TestClientContainerServiceSecurityGroup.GroupId
@@ -1209,7 +1219,7 @@ Resources:
 
   TestClientApiGateway:
     Type: AWS::ApiGatewayV2::Api
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       Name: !Sub ${AWS::StackName}-TestClientApiGateway
       ProtocolType: HTTP
@@ -1221,7 +1231,7 @@ Resources:
 
   TestClientApiGatewayIntegration:
     Type: AWS::ApiGatewayV2::Integration
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       ApiId: !Ref TestClientApiGateway
       IntegrationType: HTTP_PROXY
@@ -1234,7 +1244,7 @@ Resources:
 
   TestClientApiRoute:
     Type: AWS::ApiGatewayV2::Route
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       ApiId: !Ref TestClientApiGateway
       RouteKey: ANY /{proxy+}
@@ -1244,7 +1254,7 @@ Resources:
 
   TestClientApiDefaultStage:
     Type: AWS::ApiGatewayV2::Stage
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       ApiId: !Ref TestClientApiGateway
       StageName: $default
@@ -1270,7 +1280,7 @@ Resources:
 
   TestClientApiGatewayAccessLogsGroup:
     Type: AWS::Logs::LogGroup
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-TestClientApiGatewayAccessLogsGroup
       RetentionInDays: 90
@@ -1278,7 +1288,7 @@ Resources:
 
   TestClientApiGatewayAuthorizer:
     Type: AWS::ApiGatewayV2::Authorizer
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       Name: !Sub ${AWS::StackName}-TestClientApiGatewayAuthorizer
       ApiId: !Ref TestClientApiGateway
@@ -1298,7 +1308,7 @@ Resources:
 
   TestClientApiGatewayAuthorizerInvokePermission:
     Type: AWS::Lambda::Permission
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       FunctionName: !GetAtt ApiGatewayLambdaFunctionAuthorizer.Arn
       Action: lambda:InvokeFunction
@@ -1379,7 +1389,7 @@ Resources:
 
   TestClientClientPrivateKeySecret:
     Type: AWS::SecretsManager::Secret
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       Name: !Sub /stubs/rp-${Environment}/TEST_CLIENT_CLIENT_PRIVATE_KEY
       KmsKeyId: !GetAtt KmsKey.Arn
@@ -1422,7 +1432,7 @@ Resources:
 
   TestClientClientPrivateKeySecretAccessManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       PolicyDocument:
         Version: 2012-10-17
@@ -1443,7 +1453,7 @@ Outputs:
       Name: !Sub DocAppApiGateway-${Environment}
   TestClientApiId:
     Value: !If
-      - IsStaging
+      - GenerateTestClient
       - !Ref TestClientApiGateway
       - "no-value"
     Export:
