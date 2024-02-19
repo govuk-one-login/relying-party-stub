@@ -35,18 +35,14 @@ Conditions:
       - Fn::Equals:
           - !Ref CodeSigningConfigArn
           - none
-  IsStaging:
-    Fn::Equals:
-      - !Ref Environment
-      - staging
-  IsBuild:
-    Fn::Equals:
-      - !Ref Environment
-      - build
   GenerateTestClient:
     Fn::Or:
-      - IsBuild
-      - IsStaging
+      - Fn::Equals:
+          - !Ref Environment
+          - build
+      - Fn::Equals:
+          - !Ref Environment
+          - staging
 
 Globals:
   Function:
