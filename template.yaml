@@ -72,7 +72,7 @@ Mappings:
       clientId: k63SkCCUsoocQhowC9wt6X5R7A8NakJB
       docAppClientId: 0Aqr6Oodr9dOUz8jDC5RqsWJKTtMsGG9
       testClientStubUrl: https://test-client-rp-build.build.stubs.account.gov.uk
-      testClientClientId:
+      testClientClientId: lU1XbYXjvjDG9toTGBsfMewriAATrBKj
     staging:
       opBaseUrl: https://oidc.staging.account.gov.uk/
       stubUrl: https://rp-staging.build.stubs.account.gov.uk
