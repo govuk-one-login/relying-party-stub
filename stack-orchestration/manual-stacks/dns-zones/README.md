@@ -17,6 +17,8 @@ The template creates records for the following subdomain(s):
 
 - `rp`
 - `doc-app-rp`
+- `acceptance-test-rp` for build only
+- `perf-test-rp` for staging only
 
 ## Deployment
 
