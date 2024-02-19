@@ -73,6 +73,9 @@ Mappings:
       docAppClientId: 0Aqr6Oodr9dOUz8jDC5RqsWJKTtMsGG9
       testClientStubUrl: https://test-client-rp-build.build.stubs.account.gov.uk
       testClientClientId: lU1XbYXjvjDG9toTGBsfMewriAATrBKj
+      testClientInstances: 1
+      testClientCpu: 256
+      testClientMemory: 512
     staging:
       opBaseUrl: https://oidc.staging.account.gov.uk/
       stubUrl: https://rp-staging.build.stubs.account.gov.uk
@@ -82,6 +85,9 @@ Mappings:
       docAppClientId: rRyf33vkB8DG6JcisbS1KMQtawhEFPcO
       testClientStubUrl: https://perf-test-rp-staging.build.stubs.account.gov.uk
       testClientClientId: YaBG8osAlt6e6hzGXi79scs0T0zarwOd
+      testClientInstances: 6
+      testClientCpu: 1024
+      testClientMemory: 2048
     integration:
       opBaseUrl: https://oidc.integration.account.gov.uk/
       stubUrl: https://rp-integration.build.stubs.account.gov.uk
@@ -255,7 +261,7 @@ Resources:
     Properties:
       Cluster: !Ref FargateCluster
       TaskDefinition: !Ref TestClientTaskDefinition
-      DesiredCount: 1
+      DesiredCount:  !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientInstances ]
       LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
@@ -528,8 +534,8 @@ Resources:
               ValueFrom: !Ref IdentitySigningPublicKeySecret
             - Name: CLIENT_PRIVATE_KEY
               ValueFrom: !Ref TestClientClientPrivateKeySecret
-      Cpu: 256
-      Memory: 512
+      Cpu: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientCpu ]
+      Memory: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientMemory ]
       ExecutionRoleArn: !GetAtt TestClientTaskExecutionRole.Arn
       NetworkMode: awsvpc
       RequiresCompatibilities:
