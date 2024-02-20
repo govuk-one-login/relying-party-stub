@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 
 Description: >-
-  All the DNS Hosted Zones for the Orchestration Stubs.
+  All the DNS Hosted Zones for the Relying Party Stubs.
 Parameters:
   Environment:
     Description: The name of the environment to deploy to
