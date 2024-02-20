@@ -50,6 +50,9 @@ public class AuthorizeHandler implements Route {
 
             String language = formParameters.get("lng");
 
+            if (RelyingPartyConfig.clientType().equals("web")) {
+                throw new RuntimeException("test");
+            }
             if (RelyingPartyConfig.clientType().equals("app")) {
                 LOG.info("Doc Checking App journey initialized");
                 scopes.add("doc-checking-app");
