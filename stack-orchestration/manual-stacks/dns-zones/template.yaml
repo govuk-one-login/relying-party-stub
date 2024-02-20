@@ -37,7 +37,7 @@ Mappings:
       docAppRpDomainName: doc-app-rp-integration.build.stubs.account.gov.uk
     production:
       rpDomainName: rp.stubs.account.gov.uk
-      docAppRpDomainName: doc-app-rp.build.stubs.account.gov.uk
+      docAppRpDomainName: doc-app-rp.stubs.account.gov.uk
 
 Resources:
   RpStubCertificate:
