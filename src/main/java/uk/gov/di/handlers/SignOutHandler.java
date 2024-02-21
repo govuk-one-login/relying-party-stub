@@ -25,7 +25,7 @@ public class SignOutHandler implements Route {
         LOG.info("Generating log out request");
         var logoutUri =
                 oidcClient.buildLogoutUrl(
-                        request.session().attribute("idToken"),
+                        request.cookie("idToken"),
                         UUID.randomUUID().toString(),
                         RelyingPartyConfig.postLogoutRedirectUrl());
         response.redirect(logoutUri);
