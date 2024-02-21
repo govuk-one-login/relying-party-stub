@@ -33,8 +33,7 @@ public class AuthCallbackHandler implements Route {
                 oidcClient.makeTokenRequest(
                         request.queryParams("code"), RelyingPartyConfig.authCallbackUrl());
         oidcClient.validateIdToken(tokens.getIDToken());
-        request.session().attribute("idToken", tokens.getIDToken().getParsedString());
-
+        response.cookie("/", "idToken", tokens.getIDToken().getParsedString(), 3600, false, true);
         var userInfo = oidcClient.makeUserInfoRequest(tokens.getAccessToken());
 
         var model = new HashMap<>();
