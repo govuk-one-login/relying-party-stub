@@ -55,6 +55,10 @@ public class RelyingPartyConfig {
         return getenv().getOrDefault("STUB_URL", "http://localhost:8080");
     }
 
+    public static Optional<String> clientSecret() {
+        return Optional.ofNullable(getenv().get("TOKEN_CLIENT_SECRET"));
+    }
+
     private static String configValue(String key, String defaultValue) {
         return getenv().getOrDefault(key, defaultValue);
     }
