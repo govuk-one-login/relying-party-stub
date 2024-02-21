@@ -71,7 +71,7 @@ Mappings:
       myAccountUrl: https://home.build.account.gov.uk
       clientId: k63SkCCUsoocQhowC9wt6X5R7A8NakJB
       docAppClientId: 0Aqr6Oodr9dOUz8jDC5RqsWJKTtMsGG9
-      testClientStubUrl: https://test-client-rp-build.build.stubs.account.gov.uk
+      testClientStubUrl: https://acceptance-test-rp-build.build.stubs.account.gov.uk
       testClientClientId: lU1XbYXjvjDG9toTGBsfMewriAATrBKj
       testClientInstances: 1
       testClientCpu: 256
