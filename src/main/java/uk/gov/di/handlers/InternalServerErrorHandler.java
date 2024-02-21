@@ -10,13 +10,13 @@ import uk.gov.di.utils.ViewHelper;
 
 import java.util.HashMap;
 
-public class ErrorHandler implements Route {
+public class InternalServerErrorHandler implements Route {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InternalServerErrorHandler.class);
 
     @Override
     public Object handle(Request request, Response response) {
-        LOG.info(
+        LOG.error(
                 "ErrorResponse received. Error: {}, Error Description: {}",
                 request.queryParams("error"),
                 request.queryParams("error_description"));
