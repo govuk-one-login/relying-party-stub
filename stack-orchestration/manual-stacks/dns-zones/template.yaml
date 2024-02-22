@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 
 Description: >-
-  All the DNS Hosted Zones for the Orchestration Stubs.
+  All the DNS Hosted Zones for the Relying Party Stubs.
 Parameters:
   Environment:
     Description: The name of the environment to deploy to
@@ -15,7 +15,9 @@ Parameters:
 
 Conditions:
   IsProduction: !Equals [ !Ref Environment, production ]
-  IsStaging: !Equals [ !Ref Environment, staging]
+  GenerateTestClient: !Or
+    - !Equals [!Ref Environment, build]
+    - !Equals [!Ref Environment, staging]
 
 Mappings:
   EnvironmentConfiguration:
@@ -25,15 +27,17 @@ Mappings:
     build:
       rpDomainName: rp-build.build.stubs.account.gov.uk
       docAppRpDomainName: doc-app-rp-build.build.stubs.account.gov.uk
+      testClientDomainName: acceptance-test-rp-build.build.stubs.account.gov.uk
     staging:
       rpDomainName: rp-staging.build.stubs.account.gov.uk
       docAppRpDomainName: doc-app-rp-staging.build.stubs.account.gov.uk
+      testClientDomainName: perf-test-rp-staging.build.stubs.account.gov.uk
     integration:
       rpDomainName: rp-integration.build.stubs.account.gov.uk
       docAppRpDomainName: doc-app-rp-integration.build.stubs.account.gov.uk
     production:
       rpDomainName: rp.stubs.account.gov.uk
-      docAppRpDomainName: doc-app-rp.build.stubs.account.gov.uk
+      docAppRpDomainName: doc-app-rp.stubs.account.gov.uk
 
 Resources:
   RpStubCertificate:
@@ -144,45 +148,45 @@ Resources:
         DNSName: !GetAtt DocAppRpStubApiDomain.RegionalDomainName
         HostedZoneId: !GetAtt DocAppRpStubApiDomain.RegionalHostedZoneId
 
-  PerfTestRpStubCertificate:
+  TestClientRpStubCertificate:
     Type: AWS::CertificateManager::Certificate
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
-      DomainName: perf-test-rp-staging.build.stubs.account.gov.uk
+      DomainName: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientDomainName ]
       DomainValidationOptions:
-        - DomainName: perf-test-rp-staging.build.stubs.account.gov.uk
+        - DomainName: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientDomainName ]
           HostedZoneId: !ImportValue BuildPublicHostedZoneId
       ValidationMethod: DNS
       CertificateTransparencyLoggingPreference: ENABLED
 
-  PerfTestRpStubApiDomain:
+  TestClientRpStubApiDomain:
     Type: AWS::ApiGatewayV2::DomainName
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
-      DomainName: perf-test-rp-staging.build.stubs.account.gov.uk
+      DomainName: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientDomainName ]
       DomainNameConfigurations:
-        - CertificateArn: !Ref PerfTestRpStubCertificate
+        - CertificateArn: !Ref TestClientRpStubCertificate
           EndpointType: REGIONAL
           SecurityPolicy: TLS_1_2
 
-  PerfTestRpStubApiMapping:
+  TestClientRpStubApiMapping:
     Type: AWS::ApiGatewayV2::ApiMapping
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
-      DomainName: perf-test-rp-staging.build.stubs.account.gov.uk
+      DomainName: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientDomainName ]
       ApiId:
-        Fn::ImportValue: !Sub PerfTestApiGateway-${Environment}
+        Fn::ImportValue: !Sub TestClientApiGateway-${Environment}
       Stage: "$default"
     DependsOn:
-      - PerfTestRpStubApiDomain
+      - TestClientRpStubApiDomain
 
-  PerfTestRpStubDnsRecord:
+  TestClientRpStubDnsRecord:
     Type: AWS::Route53::RecordSet
-    Condition: IsStaging
+    Condition: GenerateTestClient
     Properties:
       Type: A
-      Name: perf-test-rp-staging.build.stubs.account.gov.uk
+      Name: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientDomainName ]
       HostedZoneId: !ImportValue BuildPublicHostedZoneId
       AliasTarget:
-        DNSName: !GetAtt PerfTestRpStubApiDomain.RegionalDomainName
-        HostedZoneId: !GetAtt PerfTestRpStubApiDomain.RegionalHostedZoneId
+        DNSName: !GetAtt TestClientRpStubApiDomain.RegionalDomainName
+        HostedZoneId: !GetAtt TestClientRpStubApiDomain.RegionalHostedZoneId
