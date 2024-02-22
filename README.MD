@@ -10,7 +10,7 @@ displaying the user info returned by the One Login service.
 You'll need to set up environment variables to run locally. Make a copy of the `.env.template` file, and rename it `.env`.
 
 The stub is currently set up to connect to the build environment (as sandpit blocks requests from localhost). Once you 
-have a copy of `.env`, you'll need to go into the `build-client-registry` table in DynamoDB, and find the client with ClientName `di-auth-stub-relying-party-build` or `di-auth-stub-relying-party-build-app` for Doc App.
+have a copy of `.env`, you'll need to go into the `build-client-registry` table in DynamoDB, and find the client with ClientName `relying-party-stub-build` or `relying-party-stub-build-app` for Doc App.
 Update the value of `CLIENT_ID` to the ClientID of this client.
 
 You will also need to set up the private key similarly. You can find this in Secrets Manager in the di-ipv-stubs-build
