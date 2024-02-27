@@ -379,6 +379,7 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/ecs/${AWS::StackName}
       DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      FilterPattern: ""
 
   TaskExecutionRole:
     Type: AWS::IAM::Role
@@ -473,6 +474,7 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/ecs/${AWS::StackName}DocApp
       DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      FilterPattern: ""
 
   DocAppTaskExecutionRole:
     Type: AWS::IAM::Role
