@@ -1061,14 +1061,6 @@ Resources:
       RetentionInDays: 90
       KmsKeyId: !GetAtt KmsKey.Arn
 
-  ApiGatewayAccessLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    DependsOn:
-      - ApiGatewayAccessLogsGroup
-    Properties:
-      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-ApiGatewayAccessLogsGroup
-      DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
-
   ApiGatewayLambdaFunctionAuthorizer:
     Type: AWS::Serverless::Function
     Properties:
@@ -1193,14 +1185,6 @@ Resources:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-DocAppApiGatewayAccessLogsGroup
       RetentionInDays: 90
       KmsKeyId: !GetAtt KmsKey.Arn
-
-  DocAppApiGatewayAccessLogGroupSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    DependsOn:
-      - DocAppApiGatewayAccessLogsGroup
-    Properties:
-      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-DocAppApiGatewayAccessLogsGroup
-      DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
 
   DocAppApiGatewayAuthorizer:
     Type: AWS::ApiGatewayV2::Authorizer
