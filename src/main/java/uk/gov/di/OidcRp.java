@@ -4,8 +4,9 @@ import uk.gov.di.config.RelyingPartyConfig;
 import uk.gov.di.handlers.AuthCallbackHandler;
 import uk.gov.di.handlers.AuthorizeHandler;
 import uk.gov.di.handlers.BackChannelLogoutHandler;
-import uk.gov.di.handlers.ErrorHandler;
+import uk.gov.di.handlers.ExceptionHandler;
 import uk.gov.di.handlers.HomeHandler;
+import uk.gov.di.handlers.InternalServerErrorHandler;
 import uk.gov.di.handlers.SignOutHandler;
 import uk.gov.di.handlers.SignedOutHandler;
 import uk.gov.di.utils.CoreIdentityValidator;
@@ -14,6 +15,7 @@ import uk.gov.di.utils.PrivateKeyReader;
 import uk.gov.di.utils.ResponseHeaderHelper;
 
 import static spark.Spark.after;
+import static spark.Spark.exception;
 import static spark.Spark.get;
 import static spark.Spark.internalServerError;
 import static spark.Spark.path;
@@ -42,7 +44,8 @@ public class OidcRp {
                 new AuthCallbackHandler(oidcClient, CoreIdentityValidator.createValidator());
         var logoutHandler = new SignOutHandler(oidcClient);
         var signedOutHandler = new SignedOutHandler();
-        var errorHandler = new ErrorHandler();
+        var internalServerErrorHandler = new InternalServerErrorHandler();
+        var exceptionHandler = new ExceptionHandler();
 
         get("/", homeHandler);
         path(
@@ -56,7 +59,9 @@ public class OidcRp {
         get("/signed-out", signedOutHandler);
         post("/backchannel-logout", new BackChannelLogoutHandler(oidcClient));
 
-        internalServerError(errorHandler);
+        exception(Exception.class, exceptionHandler);
+
+        internalServerError(internalServerErrorHandler);
 
         after("/*", (req, res) -> ResponseHeaderHelper.setHeaders(res));
     }
