@@ -73,6 +73,11 @@ public class AuthorizeHandler implements Route {
                 scopes.add(formParameters.get("scopes-phone"));
             }
 
+            if (formParameters.containsKey("scopes-wallet-subject-id")) {
+                LOG.info("Wallet Subject ID scope requested");
+                scopes.add(formParameters.get("scopes-wallet-subject-id"));
+            }
+
             String vtr = formParameters.get("2fa");
 
             var prompt = formParameters.get("prompt");
