@@ -46,11 +46,10 @@ public class AuthCallbackHandler implements Route {
             model.put("email", userInfo.getEmailAddress());
             model.put("phone_number", userInfo.getPhoneNumber());
 
-            var walletSubjectIDClaim =
-                    userInfo.getClaim("https://vocab.account.gov.uk/v1/walletSubjectID");
-            boolean walletSubjectIDClaimPresent = Objects.nonNull(walletSubjectIDClaim);
-            model.put("wallet_subject_id_claim_present", walletSubjectIDClaimPresent);
-            model.put("wallet_subject_id_claim", walletSubjectIDClaim);
+            var walletSubjectID = userInfo.getClaim("wallet-subject-id");
+            boolean walletSubjectIDPresent = Objects.nonNull(walletSubjectID);
+            model.put("wallet_subject_id_present", walletSubjectIDPresent);
+            model.put("wallet_subject_id", walletSubjectID);
 
             var coreIdentityJWT =
                     userInfo.getStringClaim("https://vocab.account.gov.uk/v1/coreIdentityJWT");
