@@ -50,7 +50,7 @@ public class AuthCallbackHandler implements Route {
             model.put("email", userInfo.getEmailAddress());
             model.put("phone_number", userInfo.getPhoneNumber());
 
-            var walletSubjectID = userInfo.getClaim("wallet-subject-id");
+            var walletSubjectID = userInfo.getClaim("wallet_subject_id");
             boolean walletSubjectIDPresent = Objects.nonNull(walletSubjectID);
             model.put("wallet_subject_id_present", walletSubjectIDPresent);
             model.put("wallet_subject_id", walletSubjectID);
