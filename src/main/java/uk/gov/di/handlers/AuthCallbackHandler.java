@@ -37,6 +37,10 @@ public class AuthCallbackHandler implements Route {
         var userInfo = oidcClient.makeUserInfoRequest(tokens.getAccessToken());
 
         var model = new HashMap<>();
+        model.put("id_token", tokens.getIDToken().getParsedString());
+        model.put("access_token", tokens.getAccessToken().toJSONString());
+        model.put("user_info_response", userInfo.toJSONString());
+
         var templateName = "userinfo.mustache";
         if (RelyingPartyConfig.clientType().equals("app")) {
             List<String> docAppCredential = (List<String>) userInfo.getClaim("doc-app-credential");
@@ -83,7 +87,6 @@ public class AuthCallbackHandler implements Route {
             model.put("locale_claim", userInfo.getClaim("locale"));
         }
         model.put("my_account_url", RelyingPartyConfig.accountManagementUrl());
-        model.put("id_token", tokens.getIDToken().getParsedString());
 
         return ViewHelper.render(model, templateName);
     }
