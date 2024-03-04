@@ -96,14 +96,14 @@
                         </dd>
                     </div>
                     {{#core_identity_claim_signature}}
-                    <div class="govuk-summary-list__row">
-                        <dt class="govuk-summary-list__key">
-                            Core Identity Claim Signature Valid
-                        </dt>
-                        <dd class="govuk-summary-list__value" id="user-info-core-identity-claim-valid">
-                            {{core_identity_claim_signature}}
-                        </dd>
-                    </div>
+                        <div class="govuk-summary-list__row">
+                            <dt class="govuk-summary-list__key">
+                                Core Identity Claim Signature Valid
+                            </dt>
+                            <dd class="govuk-summary-list__value" id="user-info-core-identity-claim-valid">
+                                {{core_identity_claim_signature}}
+                            </dd>
+                        </div>
                     {{/core_identity_claim_signature}}
                     <div class="govuk-summary-list__row">
                         <dt class="govuk-summary-list__key">
@@ -161,28 +161,44 @@
                             {{return_code_claim}}
                         </dd>
                     </div>
-                  <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                      Wallet Subject ID Scope present
-                    </dt>
-                    <dd class="govuk-summary-list__value" id="user-info-wallet-subject-id-scope-present">
-                      {{wallet_subject_id_present}}
-                    </dd>
-                  </div>
-                  <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">
-                      Wallet subject ID Scope
-                    </dt>
-                    <dd class="govuk-summary-list__value" id="user-info-wallet-subject-id-scope">
-                      {{wallet_subject_id}}
-                    </dd>
-                  </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Wallet Subject ID Scope present
+                        </dt>
+                        <dd class="govuk-summary-list__value" id="user-info-wallet-subject-id-scope-present">
+                            {{wallet_subject_id_present}}
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Wallet subject ID Scope
+                        </dt>
+                        <dd class="govuk-summary-list__value" id="user-info-wallet-subject-id-scope">
+                            {{wallet_subject_id}}
+                        </dd>
+                    </div>
                     <div class="govuk-summary-list__row">
                         <dt class="govuk-summary-list__key">
                             ID Token
                         </dt>
                         <dd class="govuk-summary-list__value" id="user-info-id-token">
                             {{id_token}}
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            Access Token
+                        </dt>
+                        <dd class="govuk-summary-list__value" id="user-info-id-token">
+                            {{access_token}}
+                        </dd>
+                    </div>
+                    <div class="govuk-summary-list__row">
+                        <dt class="govuk-summary-list__key">
+                            User Info response
+                        </dt>
+                        <dd class="govuk-summary-list__value" id="user-info-id-token">
+                            {{user_info_response}}
                         </dd>
                     </div>
                     <div class="govuk-summary-list__row">
