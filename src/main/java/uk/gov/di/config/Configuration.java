@@ -2,6 +2,9 @@ package uk.gov.di.config;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.GsonBuilder;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -78,7 +81,13 @@ public class Configuration extends HashMap<String, RPConfig> {
     }
 
     private static String fetchConfigFromSecretsManager() {
-        return "{}";
+        String secretName = configSource();
+        Region region = Region.of("eu-west-2");
+        try (SecretsManagerClient client = SecretsManagerClient.builder().region(region).build()) {
+            var secretRequest = GetSecretValueRequest.builder().secretId(secretName).build();
+
+            return client.getSecretValue(secretRequest).secretString();
+        }
     }
 
     private static String configSource() {
