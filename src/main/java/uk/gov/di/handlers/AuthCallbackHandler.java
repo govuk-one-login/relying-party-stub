@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Route;
-import uk.gov.di.config.RelyingPartyConfig;
+import uk.gov.di.config.Configuration;
 import uk.gov.di.utils.CoreIdentityValidator;
 import uk.gov.di.utils.Oidc;
 import uk.gov.di.utils.ViewHelper;
@@ -18,20 +18,16 @@ public class AuthCallbackHandler implements Route {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthCallbackHandler.class);
 
-    private final Oidc oidcClient;
-    private final CoreIdentityValidator validator;
-
-    public AuthCallbackHandler(Oidc oidc, CoreIdentityValidator validator) {
-        this.oidcClient = oidc;
-        this.validator = validator;
-    }
-
     @Override
     public Object handle(Request request, Response response) throws Exception {
         LOG.info("Callback received");
+        var relyingPartyConfig =
+                Configuration.getRelyingPartyConfig(request.cookie("relyingParty"));
+        var oidcClient = new Oidc(relyingPartyConfig);
+        var validator = CoreIdentityValidator.createValidator(relyingPartyConfig);
         var tokens =
                 oidcClient.makeTokenRequest(
-                        request.queryParams("code"), RelyingPartyConfig.authCallbackUrl());
+                        request.queryParams("code"), relyingPartyConfig.authCallbackUrl());
         oidcClient.validateIdToken(tokens.getIDToken());
         response.cookie("/", "idToken", tokens.getIDToken().getParsedString(), 3600, false, true);
         var userInfo = oidcClient.makeUserInfoRequest(tokens.getAccessToken());
@@ -42,7 +38,7 @@ public class AuthCallbackHandler implements Route {
         model.put("user_info_response", userInfo.toJSONString());
 
         var templateName = "userinfo.mustache";
-        if (RelyingPartyConfig.clientType().equals("app")) {
+        if (relyingPartyConfig.clientType().equals("app")) {
             List<String> docAppCredential = (List<String>) userInfo.getClaim("doc-app-credential");
             model.put("doc_app_credential", docAppCredential.get(0));
             templateName = "doc-app-userinfo.mustache";
@@ -86,7 +82,7 @@ public class AuthCallbackHandler implements Route {
             model.put("social_security_record_claim_present", socialSecurityRecordClaimPresent);
             model.put("locale_claim", userInfo.getClaim("locale"));
         }
-        model.put("my_account_url", RelyingPartyConfig.accountManagementUrl());
+        model.put("my_account_url", relyingPartyConfig.accountManagementUrl());
 
         return ViewHelper.render(model, templateName);
     }

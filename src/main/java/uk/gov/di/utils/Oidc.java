@@ -12,7 +12,15 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.langtag.LangTag;
 import com.nimbusds.langtag.LangTagException;
-import com.nimbusds.oauth2.sdk.*;
+import com.nimbusds.oauth2.sdk.AccessTokenResponse;
+import com.nimbusds.oauth2.sdk.AuthorizationCode;
+import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.ResponseType;
+import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.TokenRequest;
+import com.nimbusds.oauth2.sdk.TokenResponse;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretPost;
 import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT;
@@ -43,7 +51,7 @@ import net.minidev.json.JSONArray;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import uk.gov.di.config.RelyingPartyConfig;
+import uk.gov.di.config.RPConfig;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -55,22 +63,22 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import static uk.gov.di.config.RelyingPartyConfig.clientSecret;
-
 public class Oidc {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oidc.class);
+    private final RPConfig relyingPartyConfig;
 
     private final OIDCProviderMetadata providerMetadata;
     private final String idpUrl;
     private final ClientID clientId;
     private final PrivateKeyReader privateKeyReader;
 
-    public Oidc(String baseUrl, String clientId, PrivateKeyReader privateKeyReader) {
-        this.idpUrl = baseUrl;
-        this.clientId = new ClientID(clientId);
-        this.providerMetadata = loadProviderMetadata(baseUrl);
-        this.privateKeyReader = privateKeyReader;
+    public Oidc(RPConfig relyingPartyConfig) {
+        this.relyingPartyConfig = relyingPartyConfig;
+        this.idpUrl = relyingPartyConfig.opBaseUrl();
+        this.clientId = new ClientID(relyingPartyConfig.clientId());
+        this.providerMetadata = loadProviderMetadata(idpUrl);
+        this.privateKeyReader = new PrivateKeyReader(relyingPartyConfig.clientPrivateKey());
     }
 
     private OIDCProviderMetadata loadProviderMetadata(String baseUrl) {
@@ -113,7 +121,9 @@ public class Oidc {
 
         try {
             var clientAuthentication =
-                    clientSecret().map(this::clientSecretPost).orElseGet(this::privateKeyJwt);
+                    Optional.ofNullable(relyingPartyConfig.tokenClientSecret())
+                            .map(this::clientSecretPost)
+                            .orElseGet(this::privateKeyJwt);
 
             var request =
                     new TokenRequest(
@@ -315,7 +325,7 @@ public class Oidc {
                 new IDTokenValidator(
                         this.providerMetadata.getIssuer(),
                         this.clientId,
-                        RelyingPartyConfig.idTokenSigningAlgorithm(),
+                        JWSAlgorithm.parse(this.relyingPartyConfig.idTokenSigningAlgorithm()),
                         this.providerMetadata.getJWKSetURI().toURL(),
                         resourceRetriever);
 
@@ -333,7 +343,7 @@ public class Oidc {
                     new LogoutTokenValidator(
                             this.providerMetadata.getIssuer(),
                             this.clientId,
-                            RelyingPartyConfig.idTokenSigningAlgorithm(),
+                            JWSAlgorithm.parse(relyingPartyConfig.idTokenSigningAlgorithm()),
                             this.providerMetadata.getJWKSetURI().toURL(),
                             new DefaultResourceRetriever(30000, 30000));
 

@@ -38,11 +38,12 @@ dependencies {
             "org.apache.logging.log4j:log4j-slf4j2-impl:${dependencyVersions.log4j}",
             "org.apache.httpcomponents:httpclient:4.5.14",
             'net.minidev:json-smart:2.5.0',
-            implementation('org.eclipse.jetty:jetty-server') {
-                version {
-                    strictly '10.0.17'
-                }
-            }
+            "com.google.code.gson:gson:2.10.1"
+    implementation('org.eclipse.jetty:jetty-server') {
+        version {
+            strictly '10.0.17'
+        }
+    }
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2',
             'org.mockito:mockito-inline:5.2.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
