@@ -69,10 +69,10 @@ Mappings:
       stubUrl: https://rp-build.build.stubs.account.gov.uk
       docAppStubUrl: https://doc-app-rp-build.build.stubs.account.gov.uk
       myAccountUrl: https://home.build.account.gov.uk
-      clientId: k63SkCCUsoocQhowC9wt6X5R7A8NakJB
-      docAppClientId: 0Aqr6Oodr9dOUz8jDC5RqsWJKTtMsGG9
+      clientId: T8qDL0betfsw1VKe03XnrPn79PyvnTbd
+      docAppClientId: 2kRDdPth7CLEXDfdO4xpFp2pJBQlxu3j
       testClientStubUrl: https://acceptance-test-rp-build.build.stubs.account.gov.uk
-      testClientClientId: lU1XbYXjvjDG9toTGBsfMewriAATrBKj
+      testClientClientId: PRa6ju6q5SUhGlthZicVYm2QwNGfDCmw
       testClientInstances: 1
       testClientCpu: 256
       testClientMemory: 512
