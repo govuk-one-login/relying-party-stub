@@ -58,50 +58,40 @@ Globals:
 Mappings:
   EnvironmentConfiguration:
     dev:
-      opBaseUrl: https://oidc.sandpit.account.gov.uk/
+      defaultClientId: KxpWnTPIMK3GIuLY6YXHuRl7nPYvDOgB
       stubUrl: https://rp-dev.build.stubs.account.gov.uk
+      docappDefaultClientId: fEiIOynVFYVLrVz6FL7ctgZVj31lJgog
       docAppStubUrl: https://doc-app-rp-dev.build.stubs.account.gov.uk
-      myAccountUrl: https://home.dev.account.gov.uk
-      clientId: KxpWnTPIMK3GIuLY6YXHuRl7nPYvDOgB
-      docAppClientId: fEiIOynVFYVLrVz6FL7ctgZVj31lJgog
     build:
-      opBaseUrl: https://oidc.build.account.gov.uk/
+      defaultClientId: T8qDL0betfsw1VKe03XnrPn79PyvnTbd
       stubUrl: https://rp-build.build.stubs.account.gov.uk
+      docappDefaultClientId: 2kRDdPth7CLEXDfdO4xpFp2pJBQlxu3j
       docAppStubUrl: https://doc-app-rp-build.build.stubs.account.gov.uk
-      myAccountUrl: https://home.build.account.gov.uk
-      clientId: T8qDL0betfsw1VKe03XnrPn79PyvnTbd
-      docAppClientId: 2kRDdPth7CLEXDfdO4xpFp2pJBQlxu3j
+      testClientDefaultClientId: PRa6ju6q5SUhGlthZicVYm2QwNGfDCmw
       testClientStubUrl: https://acceptance-test-rp-build.build.stubs.account.gov.uk
-      testClientClientId: PRa6ju6q5SUhGlthZicVYm2QwNGfDCmw
       testClientInstances: 1
       testClientCpu: 256
       testClientMemory: 512
     staging:
-      opBaseUrl: https://oidc.staging.account.gov.uk/
+      defaultClientId: 8u21cESiFjAcO4IUC6H3ANNgkmu4MpH8
       stubUrl: https://rp-staging.build.stubs.account.gov.uk
+      docappDefaultClientId: rRyf33vkB8DG6JcisbS1KMQtawhEFPcO
       docAppStubUrl: https://doc-app-rp-staging.build.stubs.account.gov.uk
-      myAccountUrl: https://home.staging.account.gov.uk
-      clientId: 8u21cESiFjAcO4IUC6H3ANNgkmu4MpH8
-      docAppClientId: rRyf33vkB8DG6JcisbS1KMQtawhEFPcO
+      testClientDefaultClientId: YaBG8osAlt6e6hzGXi79scs0T0zarwOd
       testClientStubUrl: https://perf-test-rp-staging.build.stubs.account.gov.uk
-      testClientClientId: YaBG8osAlt6e6hzGXi79scs0T0zarwOd
       testClientInstances: 6
       testClientCpu: 1024
       testClientMemory: 2048
     integration:
-      opBaseUrl: https://oidc.integration.account.gov.uk/
+      defaultClientId: cVCXupm3pykG8OJV0foZFAOtVeT3gukI
       stubUrl: https://rp-integration.build.stubs.account.gov.uk
+      docappDefaultClientId: uSGXYNKJgIj3Llntbera5hNNuzgA09NA
       docAppStubUrl: https://doc-app-rp-integration.build.stubs.account.gov.uk
-      myAccountUrl: https://home.integration.account.gov.uk
-      clientId: cVCXupm3pykG8OJV0foZFAOtVeT3gukI
-      docAppClientId: uSGXYNKJgIj3Llntbera5hNNuzgA09NA
     production:
-      opBaseUrl: https://oidc.account.gov.uk/
+      defaultClientId: mTGf7RHk09WyEYUNZ71IUGIFJxEQ5hn1
       stubUrl: https://rp.stubs.account.gov.uk
+      docappDefaultClientId: mmJjOFD1eKxRKHhG7foSRpWVzz2UyAXR
       docAppStubUrl: https://doc-app-rp.stubs.account.gov.uk
-      myAccountUrl: https://home.production.account.gov.uk
-      clientId: mTGf7RHk09WyEYUNZ71IUGIFJxEQ5hn1
-      docAppClientId: mmJjOFD1eKxRKHhG7foSRpWVzz2UyAXR
 
 Resources:
   #
@@ -344,26 +334,16 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
           Environment:
-            - Name: OP_BASE_URL
-              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, opBaseUrl ]
-            - Name: CLIENT_TYPE
-              Value: web
+            - Name: DEFAULT_CLIENT_ID
+              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, defaultClientId ]
+            - Name: CONFIGURATION_SOURCE
+              Value: !Ref RpConfigurationSecret
             - Name: STUB_URL
               Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, stubUrl ]
-            - Name: MY_ACCOUNT_URL
-              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, myAccountUrl ]
-            - Name: SERVICE_NAME
-              Value: !Sub Sample Service - ${Environment}
-            - Name: CLIENT_ID
-              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, clientId ]
-          Secrets:
-            - Name: IDENTITY_SIGNING_PUBLIC_KEY
-              ValueFrom: !Ref IdentitySigningPublicKeySecret
-            - Name: CLIENT_PRIVATE_KEY
-              ValueFrom: !Ref ClientPrivateKeySecret
       Cpu: 256
       Memory: 512
       ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -393,6 +373,38 @@ Resources:
       DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
       FilterPattern: ""
 
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:*
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      ManagedPolicyArns:
+        - !Ref ConfigurationSecretsManagerAccessPolicy
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-TaskRole
+        - Key: Service
+          Value: Relying Party stub
+        - Key: Source
+          Value: govuk-one-login/relying-party-stub
+        - Key: Owner
+          Value: di-orchestration@digital.cabinet-office.gov.uk
+
   TaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -406,8 +418,6 @@ Resources:
               - sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-        - !Ref ECSSecretsManagerAccessManagedPolicy
-        - !Ref ClientPrivateKeySecretAccessManagedPolicy
       PermissionsBoundary: !If
         - UsePermissionsBoundary
         - !Ref PermissionsBoundary
@@ -439,26 +449,16 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
           Environment:
-            - Name: OP_BASE_URL
-              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, opBaseUrl ]
-            - Name: CLIENT_TYPE
-              Value: app
+            - Name: DEFAULT_CLIENT_ID
+              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, docappDefaultClientId ]
+            - Name: CONFIGURATION_SOURCE
+              Value: !Ref RpConfigurationSecret
             - Name: STUB_URL
               Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, docAppStubUrl ]
-            - Name: MY_ACCOUNT_URL
-              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, myAccountUrl ]
-            - Name: SERVICE_NAME
-              Value: !Sub Sample Service - ${Environment}
-            - Name: CLIENT_ID
-              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, docAppClientId ]
-          Secrets:
-            - Name: IDENTITY_SIGNING_PUBLIC_KEY
-              ValueFrom: !Ref IdentitySigningPublicKeySecret
-            - Name: CLIENT_PRIVATE_KEY
-              ValueFrom: !Ref DocAppClientPrivateKeySecret
       Cpu: 256
       Memory: 512
-      ExecutionRoleArn: !GetAtt DocAppTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -488,35 +488,6 @@ Resources:
       DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
       FilterPattern: ""
 
-  DocAppTaskExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ecs-tasks.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-        - !Ref ECSSecretsManagerAccessManagedPolicy
-        - !Ref DocAppClientPrivateKeySecretAccessManagedPolicy
-      PermissionsBoundary: !If
-        - UsePermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-DocAppTaskExecutionRole
-        - Key: Service
-          Value: Relying Party Doc App stub
-        - Key: Source
-          Value: govuk-one-login/relying-party-stub
-        - Key: Owner
-          Value: di-orchestration@digital.cabinet-office.gov.uk
-
   TestClientTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Condition: GenerateTestClient
@@ -535,26 +506,16 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
           Environment:
-            - Name: OP_BASE_URL
-              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, opBaseUrl ]
-            - Name: CLIENT_TYPE
-              Value: web
+            - Name: DEFAULT_CLIENT_ID
+              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientDefaultClientId ]
+            - Name: CONFIGURATION_SOURCE
+              Value: !Ref RpConfigurationSecret
             - Name: STUB_URL
               Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientStubUrl ]
-            - Name: MY_ACCOUNT_URL
-              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, myAccountUrl ]
-            - Name: SERVICE_NAME
-              Value: !Sub Test Client Sample Service - ${Environment}
-            - Name: CLIENT_ID
-              Value: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientClientId ]
-          Secrets:
-            - Name: IDENTITY_SIGNING_PUBLIC_KEY
-              ValueFrom: !Ref IdentitySigningPublicKeySecret
-            - Name: CLIENT_PRIVATE_KEY
-              ValueFrom: !Ref TestClientClientPrivateKeySecret
       Cpu: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientCpu ]
       Memory: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientMemory ]
-      ExecutionRoleArn: !GetAtt TestClientTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -575,36 +536,6 @@ Resources:
       LogGroupName: !Sub /aws/ecs/${AWS::StackName}TestClient
       RetentionInDays: 90
       KmsKeyId: !GetAtt KmsKey.Arn
-
-  TestClientTaskExecutionRole:
-    Type: AWS::IAM::Role
-    Condition: GenerateTestClient
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ecs-tasks.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-        - !Ref ECSSecretsManagerAccessManagedPolicy
-        - !Ref TestClientClientPrivateKeySecretAccessManagedPolicy
-      PermissionsBoundary: !If
-        - UsePermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-TestClientTaskExecutionRole
-        - Key: Service
-          Value: Relying Party Test Client stub
-        - Key: Source
-          Value: govuk-one-login/relying-party-stub
-        - Key: Owner
-          Value: di-orchestration@digital.cabinet-office.gov.uk
 
   #
   # Load balancing
@@ -1436,54 +1367,6 @@ Resources:
     Properties:
       Name: !Sub /stubs/rp-${Environment}/TEST_CLIENT_CLIENT_PRIVATE_KEY
       KmsKeyId: !GetAtt KmsKey.Arn
-
-  ECSSecretsManagerAccessManagedPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action:
-              - secretsmanager:GetSecretValue
-            Resource: !Ref IdentitySigningPublicKeySecret
-          - Effect: Allow
-            Action: kms:Decrypt
-            Resource: !GetAtt KmsKey.Arn
-
-  ClientPrivateKeySecretAccessManagedPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action:
-              - secretsmanager:GetSecretValue
-            Resource: !Ref ClientPrivateKeySecret
-
-  DocAppClientPrivateKeySecretAccessManagedPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action:
-              - secretsmanager:GetSecretValue
-            Resource: !Ref DocAppClientPrivateKeySecret
-
-  TestClientClientPrivateKeySecretAccessManagedPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Condition: GenerateTestClient
-    Properties:
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action:
-              - secretsmanager:GetSecretValue
-            Resource: !Ref TestClientClientPrivateKeySecret
   # END
 
 Outputs:
