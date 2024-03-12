@@ -10,3 +10,7 @@ services:
     env_file:
       - .env
     restart: on-failure
+    volumes:
+      - type: bind
+        source: ./config.json
+        target: /home/config.json
