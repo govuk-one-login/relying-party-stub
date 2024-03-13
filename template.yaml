@@ -1389,6 +1389,29 @@ Resources:
   # Secrets
   #
 
+  # The value of this secret is a json blob containing the configuration for all RP stubs in this environment.
+  # Each stub instance uses the same configuration but with a different default client ID.
+  RpConfigurationSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub /stubs/rp-${Environment}/CONFIGURATION
+      KmsKeyId: !GetAtt KmsKey.Arn
+
+  ConfigurationSecretsManagerAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: !Ref RpConfigurationSecret
+          - Effect: Allow
+            Action: kms:Decrypt
+            Resource: !GetAtt KmsKey.Arn
+
+  # BEGIN remove
   IdentitySigningPublicKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -1461,6 +1484,7 @@ Resources:
             Action:
               - secretsmanager:GetSecretValue
             Resource: !Ref TestClientClientPrivateKeySecret
+  # END
 
 Outputs:
   RpApiId:
