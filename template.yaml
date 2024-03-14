@@ -63,7 +63,7 @@ Mappings:
       docAppStubUrl: https://doc-app-rp-dev.build.stubs.account.gov.uk
       myAccountUrl: https://home.dev.account.gov.uk
       clientId: KxpWnTPIMK3GIuLY6YXHuRl7nPYvDOgB
-      docAppClientId: OyjIjatiwdnMtP4eX2gPpFhnLfN2kO9f
+      docAppClientId: fEiIOynVFYVLrVz6FL7ctgZVj31lJgog
     build:
       opBaseUrl: https://oidc.build.account.gov.uk/
       stubUrl: https://rp-build.build.stubs.account.gov.uk
