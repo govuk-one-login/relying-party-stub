@@ -1,17 +1,15 @@
 package uk.gov.di;
 
-import uk.gov.di.config.RelyingPartyConfig;
 import uk.gov.di.handlers.AuthCallbackHandler;
 import uk.gov.di.handlers.AuthorizeHandler;
 import uk.gov.di.handlers.BackChannelLogoutHandler;
 import uk.gov.di.handlers.ExceptionHandler;
 import uk.gov.di.handlers.HomeHandler;
 import uk.gov.di.handlers.InternalServerErrorHandler;
+import uk.gov.di.handlers.RelyingPartyGetHandler;
+import uk.gov.di.handlers.RelyingPartyPostHandler;
 import uk.gov.di.handlers.SignOutHandler;
 import uk.gov.di.handlers.SignedOutHandler;
-import uk.gov.di.utils.CoreIdentityValidator;
-import uk.gov.di.utils.Oidc;
-import uk.gov.di.utils.PrivateKeyReader;
 import uk.gov.di.utils.ResponseHeaderHelper;
 
 import static spark.Spark.after;
@@ -32,20 +30,16 @@ public class OidcRp {
     }
 
     public void initRoutes() {
-        var oidcClient =
-                new Oidc(
-                        RelyingPartyConfig.oidcProviderUrl(),
-                        RelyingPartyConfig.clientId(),
-                        new PrivateKeyReader(RelyingPartyConfig.clientPrivateKey()));
 
         var homeHandler = new HomeHandler();
-        var authorizeHandler = new AuthorizeHandler(oidcClient);
-        var authCallbackHandler =
-                new AuthCallbackHandler(oidcClient, CoreIdentityValidator.createValidator());
-        var logoutHandler = new SignOutHandler(oidcClient);
+        var authorizeHandler = new AuthorizeHandler();
+        var authCallbackHandler = new AuthCallbackHandler();
+        var logoutHandler = new SignOutHandler();
         var signedOutHandler = new SignedOutHandler();
         var internalServerErrorHandler = new InternalServerErrorHandler();
         var exceptionHandler = new ExceptionHandler();
+        var relyingPartyGetHandler = new RelyingPartyGetHandler();
+        var relyingPartyPostHandler = new RelyingPartyPostHandler();
 
         get("/", homeHandler);
         path(
@@ -57,7 +51,9 @@ public class OidcRp {
 
         post("/logout", logoutHandler);
         get("/signed-out", signedOutHandler);
-        post("/backchannel-logout", new BackChannelLogoutHandler(oidcClient));
+        post("/backchannel-logout", new BackChannelLogoutHandler());
+        get("/relying-party", relyingPartyGetHandler);
+        post("/relying-party", relyingPartyPostHandler);
 
         exception(Exception.class, exceptionHandler);
 

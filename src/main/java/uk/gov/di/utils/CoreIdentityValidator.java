@@ -8,7 +8,7 @@ import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jwt.SignedJWT;
-import uk.gov.di.config.RelyingPartyConfig;
+import uk.gov.di.config.RPConfig;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -29,8 +29,8 @@ public class CoreIdentityValidator {
         NOT_VALIDATED
     }
 
-    public static CoreIdentityValidator createValidator() {
-        return RelyingPartyConfig.identitySigningPublicKey()
+    public static CoreIdentityValidator createValidator(RPConfig relyingPartyConfig) {
+        return Optional.ofNullable(relyingPartyConfig.identitySigningPublicKey())
                 .map(Base64.getDecoder()::decode)
                 .map(X509EncodedKeySpec::new)
                 .flatMap(

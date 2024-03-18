@@ -1,0 +1,25 @@
+{
+  "T8qDL0betfsw1VKe03XnrPn79PyvnTbd" : {
+    "client_private_key": "placeholder",
+    "identity_signing_public_key": null,
+    "account_management_url": "https://home.build.account.gov.uk",
+    "client_id": "T8qDL0betfsw1VKe03XnrPn79PyvnTbd",
+    "client_type": "web",
+    "id_token_signing_algorithm": "ES256",
+    "service_name": "Build RP Stub",
+    "op_base_url": "https://oidc.build.account.gov.uk/",
+    "token_client_secret": null
+  },
+  "2kRDdPth7CLEXDfdO4xpFp2pJBQlxu3j": {
+    "client_private_key": "placeholder",
+    "identity_signing_public_key": null,
+    "account_management_url": "https://home.build.account.gov.uk",
+    "client_id": "2kRDdPth7CLEXDfdO4xpFp2pJBQlxu3j",
+    "client_type": "app",
+    "id_token_signing_algorithm": "ES256",
+    "service_name": "Build DocApp Stub",
+    "op_base_url": "https://oidc.build.account.gov.uk/",
+    "stub_url": "http://localhost:8080",
+    "token_client_secret": null
+  }
+}

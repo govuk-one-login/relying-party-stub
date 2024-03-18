@@ -8,5 +8,6 @@ echo "Building DI authentication Stub relying party"
 
 export $(grep -v '^#' .env | xargs)
 
+
 echo "Starting DI authentication Stub relying party"
 ./gradlew run

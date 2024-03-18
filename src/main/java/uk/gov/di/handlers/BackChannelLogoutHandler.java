@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Route;
+import uk.gov.di.config.Configuration;
 import uk.gov.di.utils.Oidc;
 
 import java.text.ParseException;
@@ -20,15 +21,12 @@ public class BackChannelLogoutHandler implements Route {
 
     private static final Logger LOG = LoggerFactory.getLogger(BackChannelLogoutHandler.class);
 
-    private final Oidc oidcClient;
-
-    public BackChannelLogoutHandler(Oidc oidcClient) {
-        this.oidcClient = oidcClient;
-    }
-
     @Override
     public Object handle(Request request, Response response) {
         LOG.info("Request received in BackChannelLogoutHandler");
+        var relyingPartyConfig =
+                Configuration.getRelyingPartyConfig(request.cookie("relyingParty"));
+        var oidcClient = new Oidc(relyingPartyConfig);
         var payload =
                 URLEncodedUtils.parse(request.body(), defaultCharset()).stream()
                         .collect(toMap(NameValuePair::getName, NameValuePair::getValue))

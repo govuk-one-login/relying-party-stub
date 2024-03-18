@@ -11,7 +11,8 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Route;
-import uk.gov.di.config.RelyingPartyConfig;
+import uk.gov.di.config.Configuration;
+import uk.gov.di.config.RPConfig;
 import uk.gov.di.utils.Oidc;
 import uk.gov.di.utils.ViewHelper;
 
@@ -27,14 +28,11 @@ public class AuthorizeHandler implements Route {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthorizeHandler.class);
 
-    private final Oidc oidcClient;
-
-    public AuthorizeHandler(Oidc oidc) {
-        this.oidcClient = oidc;
-    }
-
     @Override
     public Object handle(Request request, Response response) {
+        var relyingPartyConfig =
+                Configuration.getRelyingPartyConfig(request.cookie("relyingParty"));
+        var oidcClient = new Oidc(relyingPartyConfig);
         try {
             List<String> scopes = new ArrayList<>();
             scopes.add("openid");
@@ -50,12 +48,12 @@ public class AuthorizeHandler implements Route {
 
             String language = formParameters.get("lng");
 
-            if (RelyingPartyConfig.clientType().equals("app")) {
+            if (relyingPartyConfig.clientType().equals("app")) {
                 LOG.info("Doc Checking App journey initialized");
                 scopes.add("doc-checking-app");
                 var opURL =
                         oidcClient.buildDocAppAuthorizeRequest(
-                                RelyingPartyConfig.authCallbackUrl(),
+                                relyingPartyConfig.authCallbackUrl(),
                                 Scope.parse(scopes),
                                 language);
                 LOG.info("Redirecting to OP");
@@ -160,6 +158,8 @@ public class AuthorizeHandler implements Route {
 
             var authRequest =
                     buildAuthorizeRequest(
+                            relyingPartyConfig,
+                            oidcClient,
                             formParameters,
                             vtr,
                             scopes,
@@ -172,7 +172,7 @@ public class AuthorizeHandler implements Route {
             if (formParameters.containsKey("method")
                     && formParameters.get("method").equals("post")) {
                 var model = new HashMap<>();
-                model.put("servicename", RelyingPartyConfig.serviceName());
+                model.put("servicename", relyingPartyConfig.serviceName());
                 model.put("endpoint_address", oidcClient.getAuthorizationEndpoint());
                 authRequest
                         .toParameters()
@@ -194,6 +194,8 @@ public class AuthorizeHandler implements Route {
     }
 
     private AuthenticationRequest buildAuthorizeRequest(
+            RPConfig relyingPartyConfig,
+            Oidc oidcClient,
             Map<String, String> formParameters,
             String vtr,
             List<String> scopes,
@@ -206,7 +208,7 @@ public class AuthorizeHandler implements Route {
         if ("object".equals(formParameters.getOrDefault("request", "query"))) {
             LOG.info("Building authorize request with JAR");
             return oidcClient.buildJarAuthorizeRequest(
-                    RelyingPartyConfig.authCallbackUrl(),
+                    relyingPartyConfig.authCallbackUrl(),
                     vtr,
                     scopes,
                     claimsSetRequest,
@@ -217,7 +219,7 @@ public class AuthorizeHandler implements Route {
         } else {
             LOG.info("Building authorize request with query params");
             return oidcClient.buildQueryParamAuthorizeRequest(
-                    RelyingPartyConfig.authCallbackUrl(),
+                    relyingPartyConfig.authCallbackUrl(),
                     vtr,
                     scopes,
                     claimsSetRequest,
