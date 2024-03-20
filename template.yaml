@@ -58,39 +58,39 @@ Globals:
 Mappings:
   EnvironmentConfiguration:
     dev:
-      defaultClientId: KxpWnTPIMK3GIuLY6YXHuRl7nPYvDOgB
+      defaultClientId: DxbnSzMDIHMuBb6VPX4tRnYmTNMx5of6
       stubUrl: https://rp-dev.build.stubs.account.gov.uk
-      docappDefaultClientId: fEiIOynVFYVLrVz6FL7ctgZVj31lJgog
+      docappDefaultClientId: 1P5TCzX3asYnujtNyDYwEf30CopXmdYj
       docAppStubUrl: https://doc-app-rp-dev.build.stubs.account.gov.uk
     build:
-      defaultClientId: T8qDL0betfsw1VKe03XnrPn79PyvnTbd
+      defaultClientId: P5OQvWV21U0OW7U5g27d6MU2LLznYYaM
       stubUrl: https://rp-build.build.stubs.account.gov.uk
-      docappDefaultClientId: 2kRDdPth7CLEXDfdO4xpFp2pJBQlxu3j
+      docappDefaultClientId: Ig3PQrcM1BldZ5e2pBCjS5WE3loi59CA
       docAppStubUrl: https://doc-app-rp-build.build.stubs.account.gov.uk
-      testClientDefaultClientId: PRa6ju6q5SUhGlthZicVYm2QwNGfDCmw
+      testClientDefaultClientId: Ykg9fGyY76On4e8tPvFabK5BIl65EkGH
       testClientStubUrl: https://acceptance-test-rp-build.build.stubs.account.gov.uk
       testClientInstances: 1
       testClientCpu: 256
       testClientMemory: 512
     staging:
-      defaultClientId: 8u21cESiFjAcO4IUC6H3ANNgkmu4MpH8
+      defaultClientId: 3NKFv679oYlMdyrhKErrTGbzBy2h8rrd
       stubUrl: https://rp-staging.build.stubs.account.gov.uk
-      docappDefaultClientId: rRyf33vkB8DG6JcisbS1KMQtawhEFPcO
+      docappDefaultClientId: hGfX74hTP2SIBlhpZj42UqdlTueiiDES
       docAppStubUrl: https://doc-app-rp-staging.build.stubs.account.gov.uk
-      testClientDefaultClientId: YaBG8osAlt6e6hzGXi79scs0T0zarwOd
+      testClientDefaultClientId: nsR2wZ7EebJ2VOzE1LUa9iAVadunWQP3
       testClientStubUrl: https://perf-test-rp-staging.build.stubs.account.gov.uk
       testClientInstances: 6
       testClientCpu: 1024
       testClientMemory: 2048
     integration:
-      defaultClientId: cVCXupm3pykG8OJV0foZFAOtVeT3gukI
+      defaultClientId: gjWNvoLYietMjeaOE6Zoww533u18ZUfr
       stubUrl: https://rp-integration.build.stubs.account.gov.uk
-      docappDefaultClientId: uSGXYNKJgIj3Llntbera5hNNuzgA09NA
+      docappDefaultClientId: 7LXEFgsDuEHO3ZEZXM1SxC5snDD156zI
       docAppStubUrl: https://doc-app-rp-integration.build.stubs.account.gov.uk
     production:
-      defaultClientId: mTGf7RHk09WyEYUNZ71IUGIFJxEQ5hn1
+      defaultClientId: 5Vfplamzln0AoarlnX5CX4UTqyh59xfA
       stubUrl: https://rp.stubs.account.gov.uk
-      docappDefaultClientId: mmJjOFD1eKxRKHhG7foSRpWVzz2UyAXR
+      docappDefaultClientId: S71RGqYAtj9r6AXQtnSEfSHlNBEOXYMd
       docAppStubUrl: https://doc-app-rp.stubs.account.gov.uk
 
 Resources:
