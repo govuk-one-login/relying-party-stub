@@ -58,7 +58,7 @@ Globals:
 Mappings:
   EnvironmentConfiguration:
     dev:
-      defaultClientId: DxbnSzMDIHMuBb6VPX4tRnYmTNMx5of6
+      defaultClientId: TIhgQ0spwywhi5sgYodtsl56TQD5WuQc
       stubUrl: https://rp-dev.build.stubs.account.gov.uk
       docappDefaultClientId: 1P5TCzX3asYnujtNyDYwEf30CopXmdYj
       docAppStubUrl: https://doc-app-rp-dev.build.stubs.account.gov.uk
