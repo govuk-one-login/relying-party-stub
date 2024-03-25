@@ -54,6 +54,18 @@ public class Configuration extends HashMap<String, RPConfig> {
                 .orElseThrow(() -> new MissingConfigurationException("No stub url configured"));
     }
 
+    public static String getInheritedIdentityJwtIssuer() {
+        return "https://orch.stubs.account.gov.uk/migration/v1";
+    }
+
+    public static String getInheritedIdentityJwtVtm() {
+        return "https://hmrc.gov.uk/trustmark";
+    }
+
+    public static String getIpvEndpoint() {
+        return "https://identity.build.account.gov.uk/";
+    }
+
     private static Configuration fetchConfiguration() {
         String config;
         if (LOCAL_CONFIGURATION_SOURCE.equals(configSource())) {
