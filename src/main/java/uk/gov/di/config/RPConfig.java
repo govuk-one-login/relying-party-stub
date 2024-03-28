@@ -9,7 +9,8 @@ public record RPConfig(
         String idTokenSigningAlgorithm,
         String serviceName,
         String opBaseUrl,
-        String tokenClientSecret) {
+        String tokenClientSecret,
+        String inheritedIdentityJwtSigningKey) {
     public String authCallbackUrl() {
         return Configuration.getStubUrl() + "/oidc/authorization-code/callback";
     }

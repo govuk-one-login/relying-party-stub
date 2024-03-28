@@ -8,7 +8,8 @@
     "id_token_signing_algorithm": "ES256",
     "service_name": "Build RP Stub",
     "op_base_url": "https://oidc.build.account.gov.uk/",
-    "token_client_secret": null
+    "token_client_secret": null,
+    "inherited_identity_jwt_signing_key": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgOXt0P05ZsQcK7eYusgIPsqZdaBCIJiW4imwUtnaAthWhRANCAAQT1nO46ipxVTilUH2umZPN7OPI49GU6Y8YkcqLxFKUgypUzGbYR2VJGM+QJXk0PI339EyYkt6tjgfS+RcOMQNO"
   },
   "2kRDdPth7CLEXDfdO4xpFp2pJBQlxu3j": {
     "client_private_key": "placeholder",
@@ -20,6 +21,7 @@
     "service_name": "Build DocApp Stub",
     "op_base_url": "https://oidc.build.account.gov.uk/",
     "stub_url": "http://localhost:8080",
-    "token_client_secret": null
+    "token_client_secret": null,
+    "inherited_identity_jwt_signing_key": "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgOXt0P05ZsQcK7eYusgIPsqZdaBCIJiW4imwUtnaAthWhRANCAAQT1nO46ipxVTilUH2umZPN7OPI49GU6Y8YkcqLxFKUgypUzGbYR2VJGM+QJXk0PI339EyYkt6tjgfS+RcOMQNO"
   }
 }

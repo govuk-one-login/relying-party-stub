@@ -1,5 +1,14 @@
 package uk.gov.di.handlers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.crypto.ECDSASigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.Scope;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.claims.ClaimRequirement;
@@ -18,15 +27,26 @@ import uk.gov.di.utils.ViewHelper;
 
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.ECPrivateKey;
+import java.security.spec.EncodedKeySpec;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class AuthorizeHandler implements Route {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthorizeHandler.class);
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public Object handle(Request request, Response response) {
@@ -143,13 +163,37 @@ public class AuthorizeHandler implements Route {
             if (formParameters.containsKey("claims-inherited-identity")) {
                 if (!formParameters.get("claims-inherited-identity").trim().isEmpty()) {
                     LOG.info("Inherited Identity record claim requested");
+                    var inheritedIdentity =
+                            convertJsonToMap(
+                                    "{" + formParameters.get("claims-inherited-identity") + "}");
+
+                    JWTClaimsSet claims =
+                            new JWTClaimsSet.Builder()
+                                    .subject(
+                                            "urn:fdc:gov.uk:2022:-WaWGynBDXunAih77MAGjvYfJfcN9y_wzmuX4MT9MuA")
+                                    .audience(Configuration.getIpvEndpoint())
+                                    .issuer(Configuration.getInheritedIdentityJwtIssuer())
+                                    .notBeforeTime(new Date())
+                                    .claim("vot", formParameters.get("vot"))
+                                    .claim("vtm", Configuration.getInheritedIdentityJwtVtm())
+                                    .jwtID(
+                                            String.format(
+                                                    "%s:%s",
+                                                    "urn:uuid", UUID.randomUUID().toString()))
+                                    .claim("vc", inheritedIdentity)
+                                    .build();
+
+                    JWSSigner signer =
+                            new ECDSASigner(
+                                    getSigningKey(
+                                            relyingPartyConfig.inheritedIdentityJwtSigningKey()));
+                    SignedJWT signedJwt = new SignedJWT(new JWSHeader(JWSAlgorithm.ES256), claims);
+                    signedJwt.sign(signer);
+
                     var inheritedIdentityEntry =
                             new ClaimsSetRequest.Entry(
                                             "https://vocab.account.gov.uk/v1/inheritedIdentityJWT")
-                                    .withValues(
-                                            List.of(
-                                                    formParameters.get(
-                                                            "claims-inherited-identity")));
+                                    .withValues(List.of(signedJwt.serialize()));
                     claimsSetRequest = claimsSetRequest.add(inheritedIdentityEntry);
                 } else {
                     claimsSetRequest.delete("claims-inherited-identity");
@@ -191,6 +235,19 @@ public class AuthorizeHandler implements Route {
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    private static Map<String, Object> convertJsonToMap(String json)
+            throws JsonProcessingException {
+        return objectMapper.readValue(json, new TypeReference<>() {});
+    }
+
+    private static ECPrivateKey getSigningKey(String key)
+            throws InvalidKeySpecException, NoSuchAlgorithmException {
+        byte[] binaryKey = Base64.getDecoder().decode(key);
+        KeyFactory factory = KeyFactory.getInstance("EC");
+        EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(binaryKey);
+        return (ECPrivateKey) factory.generatePrivate(privateKeySpec);
     }
 
     private AuthenticationRequest buildAuthorizeRequest(
