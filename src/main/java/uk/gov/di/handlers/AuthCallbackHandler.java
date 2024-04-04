@@ -21,6 +21,10 @@ public class AuthCallbackHandler implements Route {
     @Override
     public Object handle(Request request, Response response) throws Exception {
         LOG.info("Callback received");
+        if (request.queryParams("error") != null) {
+            return renderError(request);
+        }
+
         var relyingPartyConfig =
                 Configuration.getRelyingPartyConfig(request.cookie("relyingParty"));
         var oidcClient = new Oidc(relyingPartyConfig);
@@ -85,5 +89,13 @@ public class AuthCallbackHandler implements Route {
         model.put("my_account_url", relyingPartyConfig.accountManagementUrl());
 
         return ViewHelper.render(model, templateName);
+    }
+
+    private static Object renderError(Request request) {
+        LOG.error("Error response in callback");
+        var model = new HashMap<>();
+        model.put("error", request.queryParams("error"));
+        model.put("error_description", request.queryParams("error_description"));
+        return ViewHelper.render(model, "callback-error.mustache");
     }
 }
