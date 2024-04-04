@@ -247,8 +247,28 @@
                                 </label>
                             </div>
                         </div>
-                        <label class="govuk-label govuk-checkboxes__label" for="claims-inherited-identity">Inherited Identity (jwt):</label>
-                        <textarea class="govuk-textarea" id="claims-inherited-identity" name="claims-inherited-identity" type="text"></textarea>
+                        <label class="govuk-label govuk-checkboxes__label">Inherited Identity:</label>
+                        <div class="govuk-form-group" id="test_data_block"></div>
+                        <div class="identity-options" id="identity-options">
+                            <div class="govuk-radios">
+                                <div class="govuk-radios__item">
+                                    <input class="govuk-radios__input" id="vot-PCL200" name="vot" type="radio" value="PCL200" checked>
+                                    <label class="govuk-label govuk-radios__label" for="vot-PCL200">
+                                        PCL200
+                                    </label>
+                                </div>
+                                <div class="govuk-radios__item">
+                                    <input class="govuk-radios__input" id="vot-PCL250" name="vot" type="radio" value="PCL250">
+                                    <label class="govuk-label govuk-radios__label" for="vot-PCL250">
+                                        PCL250
+                                    </label>
+                                </div>
+                            </div>
+
+                            <label class="govuk-label govuk-checkboxes__label">evidence:</label>
+                            <div class="govuk-form-group" id="custom_evidence_block"></div>
+                            <textarea class="govuk-textarea" id="claims-inherited-identity" name="claims-inherited-identity" type="text" rows="10"></textarea>
+                        </div>
                     </fieldset>
                 </div>
 
@@ -384,5 +404,7 @@
 <script>
     window.GOVUKFrontend.initAll()
 </script>
+<script src="./jquery.js"></script>
+<script src="./testcases.js" type="text/javascript"></script>
 </body>
 </html>
