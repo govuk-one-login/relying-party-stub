@@ -293,15 +293,6 @@ Resources:
         - - service
           - !Ref FargateCluster
           - !Ref TestClientContainerService
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-TestClientContainerService
-        - Key: Service
-          Value: Relying Party Test Client stub
-        - Key: Source
-          Value: govuk-one-login/relying-party-stub
-        - Key: Owner
-          Value: di-orchestration@digital.cabinet-office.gov.uk
 
   TestClientCSScalingPolicyCPU:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
