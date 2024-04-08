@@ -70,6 +70,9 @@ Mappings:
       testClientDefaultClientId: Ykg9fGyY76On4e8tPvFabK5BIl65EkGH
       testClientStubUrl: https://acceptance-test-rp-build.build.stubs.account.gov.uk
       testClientInstances: 1
+      testClientInstancesmincount: 1
+      testClientInstancesmaxcount: 2
+      ALBPolicyTargetValue: 2000      
       testClientCpu: 256
       testClientMemory: 512
     staging:
@@ -888,6 +891,8 @@ Resources:
         HttpCode: 200
       TargetType: ip
       UnhealthyThresholdCount: 2
+      HealthyThresholdCount: 2
+      HealthCheckIntervalSeconds: 10
       VpcId:
         Fn::ImportValue: !Sub ${VpcStackName}-VpcId
       TargetGroupAttributes:
