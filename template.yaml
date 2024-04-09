@@ -43,9 +43,6 @@ Conditions:
       - Fn::Equals:
           - !Ref Environment
           - staging
-      - Fn::Equals:
-          - !Ref Environment
-          - dev
 
 Globals:
   Function:
