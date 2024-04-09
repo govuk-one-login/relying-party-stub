@@ -70,6 +70,9 @@ Mappings:
       testClientDefaultClientId: Ykg9fGyY76On4e8tPvFabK5BIl65EkGH
       testClientStubUrl: https://acceptance-test-rp-build.build.stubs.account.gov.uk
       testClientInstances: 1
+      testClientInstancesmincount: 1
+      testClientInstancesmaxcount: 2
+      ALBPolicyTargetValue: 2000      
       testClientCpu: 256
       testClientMemory: 512
     staging:
@@ -79,7 +82,10 @@ Mappings:
       docAppStubUrl: https://doc-app-rp-staging.build.stubs.account.gov.uk
       testClientDefaultClientId: nsR2wZ7EebJ2VOzE1LUa9iAVadunWQP3
       testClientStubUrl: https://perf-test-rp-staging.build.stubs.account.gov.uk
-      testClientInstances: 6
+      testClientInstances: 4
+      testClientInstancesmincount: 4
+      testClientInstancesmaxcount: 30
+      ALBPolicyTargetValue: 2000
       testClientCpu: 1024
       testClientMemory: 2048
     integration:
@@ -276,6 +282,53 @@ Resources:
         - Key: Owner
           Value: di-orchestration@digital.cabinet-office.gov.uk
     DependsOn: TestClientApplicationLoadBalancerListener
+
+  TestClientCSScalableTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Condition: GenerateTestClient
+    Properties:
+      MaxCapacity: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientInstancesmaxcount ]
+      MinCapacity: !FindInMap [ EnvironmentConfiguration, !Ref Environment, testClientInstancesmincount ]
+      ScalableDimension: "ecs:service:DesiredCount"
+      ServiceNamespace: "ecs"
+      ResourceId: !Join
+        - /
+        - - service
+          - !Ref FargateCluster
+          - !Ref TestClientContainerService
+
+  TestClientCSScalingPolicyCPU:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: GenerateTestClient
+    Properties:
+      PolicyName: !Sub ${AWS::StackName}-target-tracking-cpu
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: Ref TestClientCSScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 50.0
+        ScaleInCooldown: 240
+        ScaleOutCooldown: 60
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+
+  TestClientCSScalingPolicyALB:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Condition: GenerateTestClient
+    Properties:
+      PolicyName: !Sub ${AWS::StackName}-alb-requests-per-target-per-minute
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: Ref TestClientCSScalableTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: !FindInMap [ EnvironmentConfiguration, !Ref Environment, ALBPolicyTargetValue ]
+        ScaleInCooldown: 180
+        ScaleOutCooldown: 30
+        DisableScaleIn: true
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ALBRequestCountPerTarget
+          ResourceLabel: !Join 
+            - '/' 
+            - - !GetAtt TestClientApplicationLoadBalancer.LoadBalancerFullName
+              - !GetAtt TestClientApplicationLoadBalancerTargetGroup.TargetGroupFullName
 
   TestClientContainerServiceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -838,6 +891,8 @@ Resources:
         HttpCode: 200
       TargetType: ip
       UnhealthyThresholdCount: 2
+      HealthyThresholdCount: 2
+      HealthCheckIntervalSeconds: 10
       VpcId:
         Fn::ImportValue: !Sub ${VpcStackName}-VpcId
       TargetGroupAttributes:
