@@ -43,6 +43,9 @@ Conditions:
       - Fn::Equals:
           - !Ref Environment
           - staging
+      - Fn::Equals:
+          - !Ref Environment
+          - dev
 
 Globals:
   Function:
@@ -303,7 +306,7 @@ Resources:
     Properties:
       PolicyName: !Sub ${AWS::StackName}-target-tracking-cpu
       PolicyType: TargetTrackingScaling
-      ScalingTargetId: Ref TestClientCSScalableTarget
+      ScalingTargetId: !Ref TestClientCSScalableTarget
       TargetTrackingScalingPolicyConfiguration:
         TargetValue: 50.0
         ScaleInCooldown: 240
@@ -317,7 +320,7 @@ Resources:
     Properties:
       PolicyName: !Sub ${AWS::StackName}-alb-requests-per-target-per-minute
       PolicyType: TargetTrackingScaling
-      ScalingTargetId: Ref TestClientCSScalableTarget
+      ScalingTargetId: !Ref TestClientCSScalableTarget
       TargetTrackingScalingPolicyConfiguration:
         TargetValue: !FindInMap [ EnvironmentConfiguration, !Ref Environment, ALBPolicyTargetValue ]
         ScaleInCooldown: 180
