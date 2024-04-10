@@ -73,8 +73,8 @@ Mappings:
       testClientInstancesmincount: 1
       testClientInstancesmaxcount: 2
       ALBPolicyTargetValue: 2000      
-      testClientCpu: 256
-      testClientMemory: 512
+      testClientCpu: 1024
+      testClientMemory: 2048
     staging:
       defaultClientId: 3NKFv679oYlMdyrhKErrTGbzBy2h8rrd
       stubUrl: https://rp-staging.build.stubs.account.gov.uk
@@ -295,7 +295,7 @@ Resources:
         - /
         - - service
           - !Ref FargateCluster
-          - !Ref TestClientContainerService
+          - !GetAtt TestClientContainerService.Name
 
   TestClientCSScalingPolicyCPU:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
