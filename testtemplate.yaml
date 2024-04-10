@@ -1,0 +1,1737 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template to create the infrastructure for the Auth Relying Party stub.
+Transform:
+- AWS::Serverless-2016-10-31
+- AWS::LanguageExtensions
+Parameters:
+  VpcStackName:
+    Description: The name of the stack that defines the VPC that this container will
+      run in
+    Type: String
+  Environment:
+    Description: Environment the infrastructure is deployed to
+    Type: String
+  PermissionsBoundary:
+    Type: String
+    Description: 'The ARN of the permissions boundary to apply to any role created
+      by the template
+
+      '
+    Default: none
+  CodeSigningConfigArn:
+    Type: String
+    Description: 'The ARN of the Code Signing Config to use, provided by the deployment
+      pipeline
+
+      '
+    Default: none
+Conditions:
+  UsePermissionsBoundary:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: PermissionsBoundary
+      - none
+  UseCodeSigning:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: CodeSigningConfigArn
+      - none
+  GenerateTestClient:
+    Fn::Or:
+    - Fn::Equals:
+      - Ref: Environment
+      - build
+    - Fn::Equals:
+      - Ref: Environment
+      - staging
+Globals:
+  Function:
+    PermissionsBoundary:
+      Fn::If:
+      - UsePermissionsBoundary
+      - Ref: PermissionsBoundary
+      - Ref: AWS::NoValue
+    CodeSigningConfigArn:
+      Fn::If:
+      - UseCodeSigning
+      - Ref: CodeSigningConfigArn
+      - Ref: AWS::NoValue
+Mappings:
+  EnvironmentConfiguration:
+    dev:
+      defaultClientId: 1Dlz5rYheTqzZASRMmSBtgFIYgZlysnQ
+      stubUrl: https://rp-dev.build.stubs.account.gov.uk
+      docappDefaultClientId: 1P5TCzX3asYnujtNyDYwEf30CopXmdYj
+      docAppStubUrl: https://doc-app-rp-dev.build.stubs.account.gov.uk
+    build:
+      defaultClientId: P5OQvWV21U0OW7U5g27d6MU2LLznYYaM
+      stubUrl: https://rp-build.build.stubs.account.gov.uk
+      docappDefaultClientId: Ig3PQrcM1BldZ5e2pBCjS5WE3loi59CA
+      docAppStubUrl: https://doc-app-rp-build.build.stubs.account.gov.uk
+      testClientDefaultClientId: Ykg9fGyY76On4e8tPvFabK5BIl65EkGH
+      testClientStubUrl: https://acceptance-test-rp-build.build.stubs.account.gov.uk
+      testClientInstances: 1
+      testClientInstancesmincount: 1
+      testClientInstancesmaxcount: 2
+      ALBPolicyTargetValue: 2000      
+      testClientCpu: 256
+      testClientMemory: 512
+    staging:
+      defaultClientId: 3NKFv679oYlMdyrhKErrTGbzBy2h8rrd
+      stubUrl: https://rp-staging.build.stubs.account.gov.uk
+      docappDefaultClientId: hGfX74hTP2SIBlhpZj42UqdlTueiiDES
+      docAppStubUrl: https://doc-app-rp-staging.build.stubs.account.gov.uk
+      testClientDefaultClientId: nsR2wZ7EebJ2VOzE1LUa9iAVadunWQP3
+      testClientStubUrl: https://perf-test-rp-staging.build.stubs.account.gov.uk
+      testClientInstances: 6
+      testClientCpu: 1024
+      testClientMemory: 2048
+    integration:
+      defaultClientId: gjWNvoLYietMjeaOE6Zoww533u18ZUfr
+      stubUrl: https://rp-integration.build.stubs.account.gov.uk
+      docappDefaultClientId: 7LXEFgsDuEHO3ZEZXM1SxC5snDD156zI
+      docAppStubUrl: https://doc-app-rp-integration.build.stubs.account.gov.uk
+    production:
+      defaultClientId: 5Vfplamzln0AoarlnX5CX4UTqyh59xfA
+      stubUrl: https://rp.stubs.account.gov.uk
+      docappDefaultClientId: S71RGqYAtj9r6AXQtnSEfSHlNBEOXYMd
+      docAppStubUrl: https://doc-app-rp.stubs.account.gov.uk
+Resources:
+  FargateCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterSettings:
+      - Name: containerInsights
+        Value: enabled
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-FargateCluster
+      - Key: Service
+        Value: Relying Party stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: FargateCluster
+  ContainerService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster:
+        Ref: FargateCluster
+      TaskDefinition:
+        Ref: TaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+          - Fn::ImportValue:
+              Fn::Sub: ${VpcStackName}-ProtectedSubnetIdA
+          - Fn::ImportValue:
+              Fn::Sub: ${VpcStackName}-ProtectedSubnetIdB
+          SecurityGroups:
+          - Ref: ContainerServiceSecurityGroup
+      LoadBalancers:
+      - ContainerName:
+          Fn::Sub: ${AWS::StackName}-ECSServiceTaskDefinition
+        ContainerPort: 8080
+        TargetGroupArn:
+          Ref: ApplicationLoadBalancerTargetGroup
+      PropagateTags: SERVICE
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-ContainerService
+      - Key: Service
+        Value: Relying Party stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    DependsOn: ApplicationLoadBalancerListener
+    Metadata:
+      SamResourceId: ContainerService
+  ContainerServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group to access the Container Service
+      GroupName:
+        Fn::Join:
+        - '-'
+        - - Ref: AWS::StackName
+          - ContainerService
+          - Fn::Select:
+            - 4
+            - Fn::Split:
+              - '-'
+              - Fn::Select:
+                - 2
+                - Fn::Split:
+                  - /
+                  - Ref: AWS::StackId
+      SecurityGroupIngress:
+      - Description: Allow traffic from the load balancer on port 8080
+        SourceSecurityGroupId:
+          Fn::GetAtt:
+          - ApplicationLoadBalancerSecurityGroup
+          - GroupId
+        IpProtocol: tcp
+        FromPort: 8080
+        ToPort: 8080
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcId
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-ContainerServiceSecurityGroup
+      - Key: Service
+        Value: Relying Party stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: ContainerServiceSecurityGroup
+  DocAppContainerService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster:
+        Ref: FargateCluster
+      TaskDefinition:
+        Ref: DocAppTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+          - Fn::ImportValue:
+              Fn::Sub: ${VpcStackName}-ProtectedSubnetIdA
+          - Fn::ImportValue:
+              Fn::Sub: ${VpcStackName}-ProtectedSubnetIdB
+          SecurityGroups:
+          - Ref: DocAppContainerServiceSecurityGroup
+      LoadBalancers:
+      - ContainerName:
+          Fn::Sub: ${AWS::StackName}-DocAppECSServiceTaskDefinition
+        ContainerPort: 8080
+        TargetGroupArn:
+          Ref: DocAppApplicationLoadBalancerTargetGroup
+      PropagateTags: SERVICE
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-DocAppContainerService
+      - Key: Service
+        Value: Relying Party Doc App stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    DependsOn: DocAppApplicationLoadBalancerListener
+    Metadata:
+      SamResourceId: DocAppContainerService
+  DocAppContainerServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group to access the Container Service
+      GroupName:
+        Fn::Join:
+        - '-'
+        - - Ref: AWS::StackName
+          - DocAppContainerService
+          - Fn::Select:
+            - 4
+            - Fn::Split:
+              - '-'
+              - Fn::Select:
+                - 2
+                - Fn::Split:
+                  - /
+                  - Ref: AWS::StackId
+      SecurityGroupIngress:
+      - Description: Allow traffic from the load balancer on port 8080
+        SourceSecurityGroupId:
+          Fn::GetAtt:
+          - DocAppApplicationLoadBalancerSecurityGroup
+          - GroupId
+        IpProtocol: tcp
+        FromPort: 8080
+        ToPort: 8080
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcId
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-DocAppContainerServiceSecurityGroup
+      - Key: Service
+        Value: Relying Party Doc App stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: DocAppContainerServiceSecurityGroup
+  TestClientContainerService:
+    Type: AWS::ECS::Service
+    Condition: GenerateTestClient
+    Properties:
+      Cluster:
+        Ref: FargateCluster
+      TaskDefinition:
+        Ref: TestClientTaskDefinition
+      DesiredCount:
+        Fn::FindInMap:
+        - EnvironmentConfiguration
+        - Ref: Environment
+        - testClientInstances
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets:
+          - Fn::ImportValue:
+              Fn::Sub: ${VpcStackName}-ProtectedSubnetIdA
+          - Fn::ImportValue:
+              Fn::Sub: ${VpcStackName}-ProtectedSubnetIdB
+          SecurityGroups:
+          - Ref: TestClientContainerServiceSecurityGroup
+      LoadBalancers:
+      - ContainerName:
+          Fn::Sub: ${AWS::StackName}-TestClientECSServiceTaskDefinition
+        ContainerPort: 8080
+        TargetGroupArn:
+          Ref: TestClientApplicationLoadBalancerTargetGroup
+      PropagateTags: SERVICE
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-TestClientContainerService
+      - Key: Service
+        Value: Relying Party Test Client stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    DependsOn: TestClientApplicationLoadBalancerListener
+    Metadata:
+      SamResourceId: TestClientContainerService
+  TestClientContainerServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: GenerateTestClient
+    Properties:
+      GroupDescription: Security Group to access the Container Service
+      GroupName:
+        Fn::Join:
+        - '-'
+        - - Ref: AWS::StackName
+          - TestClientContainerService
+          - Fn::Select:
+            - 4
+            - Fn::Split:
+              - '-'
+              - Fn::Select:
+                - 2
+                - Fn::Split:
+                  - /
+                  - Ref: AWS::StackId
+      SecurityGroupIngress:
+      - Description: Allow traffic from the load balancer on port 8080
+        SourceSecurityGroupId:
+          Fn::GetAtt:
+          - TestClientApplicationLoadBalancerSecurityGroup
+          - GroupId
+        IpProtocol: tcp
+        FromPort: 8080
+        ToPort: 8080
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcId
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-TestClientContainerServiceSecurityGroup
+      - Key: Service
+        Value: Relying Party Test Client stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: TestClientContainerServiceSecurityGroup
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+      - Name:
+          Fn::Sub: ${AWS::StackName}-ECSServiceTaskDefinition
+        Image: 616199614141.dkr.ecr.eu-west-2.amazonaws.com/build-rp-stub-ecr-containerrepository-os9iyabna5j4:ed205cce1e567d780a673c00083c0cfea48509cb-rp-stub-2024-04-09-092924
+        PortMappings:
+        - ContainerPort: 8080
+          Protocol: tcp
+        Essential: true
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Fn::Sub: /aws/ecs/${AWS::StackName}
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: ecs
+        Environment:
+        - Name: DEFAULT_CLIENT_ID
+          Value:
+            Fn::FindInMap:
+            - EnvironmentConfiguration
+            - Ref: Environment
+            - defaultClientId
+        - Name: CONFIGURATION_SOURCE
+          Value:
+            Ref: RpConfigurationSecret
+        - Name: STUB_URL
+          Value:
+            Fn::FindInMap:
+            - EnvironmentConfiguration
+            - Ref: Environment
+            - stubUrl
+      Cpu: 256
+      Memory: 512
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - TaskExecutionRole
+        - Arn
+      TaskRoleArn:
+        Fn::GetAtt:
+        - TaskRole
+        - Arn
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+      - FARGATE
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-TaskDefinition
+      - Key: Service
+        Value: Relying Party stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: TaskDefinition
+  TaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/ecs/${AWS::StackName}
+      RetentionInDays: 90
+      KmsKeyId:
+        Fn::GetAtt:
+        - KmsKey
+        - Arn
+    Metadata:
+      SamResourceId: TaskLogGroup
+  TaskLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    DependsOn:
+    - TaskLogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/ecs/${AWS::StackName}
+      DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      FilterPattern: ''
+    Metadata:
+      SamResourceId: TaskLogGroupSubscriptionFilter
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ecs-tasks.amazonaws.com
+          Action:
+          - sts:AssumeRole
+          Condition:
+            ArnLike:
+              aws:SourceArn:
+                Fn::Sub: arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:*
+            StringEquals:
+              aws:SourceAccount:
+                Ref: AWS::AccountId
+      ManagedPolicyArns:
+      - Ref: ConfigurationSecretsManagerAccessPolicy
+      PermissionsBoundary:
+        Fn::If:
+        - UsePermissionsBoundary
+        - Ref: PermissionsBoundary
+        - Ref: AWS::NoValue
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-TaskRole
+      - Key: Service
+        Value: Relying Party stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: TaskRole
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: ecs-tasks.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      PermissionsBoundary:
+        Fn::If:
+        - UsePermissionsBoundary
+        - Ref: PermissionsBoundary
+        - Ref: AWS::NoValue
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-TaskExecutionRole
+      - Key: Service
+        Value: Relying Party stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: TaskExecutionRole
+  DocAppTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+      - Name:
+          Fn::Sub: ${AWS::StackName}-DocAppECSServiceTaskDefinition
+        Image: 616199614141.dkr.ecr.eu-west-2.amazonaws.com/build-rp-stub-ecr-containerrepository-os9iyabna5j4:ed205cce1e567d780a673c00083c0cfea48509cb-rp-stub-2024-04-09-092924
+        PortMappings:
+        - ContainerPort: 8080
+          Protocol: tcp
+        Essential: true
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Fn::Sub: /aws/ecs/${AWS::StackName}DocApp
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: ecs
+        Environment:
+        - Name: DEFAULT_CLIENT_ID
+          Value:
+            Fn::FindInMap:
+            - EnvironmentConfiguration
+            - Ref: Environment
+            - docappDefaultClientId
+        - Name: CONFIGURATION_SOURCE
+          Value:
+            Ref: RpConfigurationSecret
+        - Name: STUB_URL
+          Value:
+            Fn::FindInMap:
+            - EnvironmentConfiguration
+            - Ref: Environment
+            - docAppStubUrl
+      Cpu: 256
+      Memory: 512
+      TaskRoleArn:
+        Fn::GetAtt:
+        - TaskRole
+        - Arn
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - TaskExecutionRole
+        - Arn
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+      - FARGATE
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-DocAppTaskDefinition
+      - Key: Service
+        Value: Relying Party Doc App stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: DocAppTaskDefinition
+  DocAppTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/ecs/${AWS::StackName}DocApp
+      RetentionInDays: 90
+      KmsKeyId:
+        Fn::GetAtt:
+        - KmsKey
+        - Arn
+    Metadata:
+      SamResourceId: DocAppTaskLogGroup
+  DocAppTaskLogGroupSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    DependsOn:
+    - DocAppTaskLogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/ecs/${AWS::StackName}DocApp
+      DestinationArn: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      FilterPattern: ''
+    Metadata:
+      SamResourceId: DocAppTaskLogGroupSubscriptionFilter
+  TestClientTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Condition: GenerateTestClient
+    Properties:
+      ContainerDefinitions:
+      - Name:
+          Fn::Sub: ${AWS::StackName}-TestClientECSServiceTaskDefinition
+        Image: 616199614141.dkr.ecr.eu-west-2.amazonaws.com/build-rp-stub-ecr-containerrepository-os9iyabna5j4:ed205cce1e567d780a673c00083c0cfea48509cb-rp-stub-2024-04-09-092924
+        PortMappings:
+        - ContainerPort: 8080
+          Protocol: tcp
+        Essential: true
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group:
+              Fn::Sub: /aws/ecs/${AWS::StackName}TestClient
+            awslogs-region:
+              Ref: AWS::Region
+            awslogs-stream-prefix: ecs
+        Environment:
+        - Name: DEFAULT_CLIENT_ID
+          Value:
+            Fn::FindInMap:
+            - EnvironmentConfiguration
+            - Ref: Environment
+            - testClientDefaultClientId
+        - Name: CONFIGURATION_SOURCE
+          Value:
+            Ref: RpConfigurationSecret
+        - Name: STUB_URL
+          Value:
+            Fn::FindInMap:
+            - EnvironmentConfiguration
+            - Ref: Environment
+            - testClientStubUrl
+      Cpu:
+        Fn::FindInMap:
+        - EnvironmentConfiguration
+        - Ref: Environment
+        - testClientCpu
+      Memory:
+        Fn::FindInMap:
+        - EnvironmentConfiguration
+        - Ref: Environment
+        - testClientMemory
+      TaskRoleArn:
+        Fn::GetAtt:
+        - TaskRole
+        - Arn
+      ExecutionRoleArn:
+        Fn::GetAtt:
+        - TaskExecutionRole
+        - Arn
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+      - FARGATE
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-TestClientTaskDefinition
+      - Key: Service
+        Value: Relying Party Test Client stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: TestClientTaskDefinition
+  TestClientTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: GenerateTestClient
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/ecs/${AWS::StackName}TestClient
+      RetentionInDays: 90
+      KmsKeyId:
+        Fn::GetAtt:
+        - KmsKey
+        - Arn
+    Metadata:
+      SamResourceId: TestClientTaskLogGroup
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      SecurityGroups:
+      - Fn::GetAtt:
+        - ApplicationLoadBalancerSecurityGroup
+        - GroupId
+      Subnets:
+      - Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-PrivateSubnetIdA
+      - Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-PrivateSubnetIdB
+      LoadBalancerAttributes:
+      - Key: routing.http.drop_invalid_header_fields.enabled
+        Value: true
+      Scheme: internal
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-ApplicationLoadBalancer
+      - Key: Service
+        Value: Relying Party stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: ApplicationLoadBalancer
+  ApplicationLoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPort: traffic-port
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: /
+      Port: 8080
+      Protocol: HTTP
+      ProtocolVersion: HTTP1
+      Matcher:
+        HttpCode: 200
+      TargetType: ip
+      UnhealthyThresholdCount: 2
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcId
+      TargetGroupAttributes:
+      - Key: deregistration_delay.timeout_seconds
+        Value: 5
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-ApplicationLoadBalancerTargetGroup
+      - Key: Service
+        Value: Relying Party stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: ApplicationLoadBalancerTargetGroup
+  ApplicationLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - TargetGroupArn:
+          Ref: ApplicationLoadBalancerTargetGroup
+        Type: forward
+      LoadBalancerArn:
+        Ref: ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+    Metadata:
+      SamResourceId: ApplicationLoadBalancerListener
+  ApplicationLoadBalancerListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        ForwardConfig:
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: ApplicationLoadBalancerTargetGroup
+            Weight: 1
+      Conditions:
+      - Field: http-header
+        HttpHeaderConfig:
+          HttpHeaderName: User-Agent
+          Values:
+          - Mozilla
+      ListenerArn:
+        Ref: ApplicationLoadBalancerListener
+      Priority: 1
+    Metadata:
+      SamResourceId: ApplicationLoadBalancerListenerRule
+  ApplicationLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for the Application Load Balancer
+      GroupName:
+        Fn::Join:
+        - '-'
+        - - Ref: AWS::StackName
+          - ApplicationLoadBalancer
+          - Fn::Select:
+            - 4
+            - Fn::Split:
+              - '-'
+              - Fn::Select:
+                - 2
+                - Fn::Split:
+                  - /
+                  - Ref: AWS::StackId
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcId
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-ApplicationLoadBalancerSecurityGroup
+      - Key: Service
+        Value: Relying Party stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: ApplicationLoadBalancerSecurityGroup
+  ApplicationLoadBalancerSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId:
+        Fn::GetAtt:
+        - ApplicationLoadBalancerSecurityGroup
+        - GroupId
+      CidrIp:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcCidr
+      Description: Allow traffic from the VPC on port 80
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+    Metadata:
+      SamResourceId: ApplicationLoadBalancerSecurityGroupIngress
+  ApplicationLoadBalancerSecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId:
+        Fn::GetAtt:
+        - ApplicationLoadBalancerSecurityGroup
+        - GroupId
+      DestinationSecurityGroupId:
+        Fn::GetAtt:
+        - ContainerServiceSecurityGroup
+        - GroupId
+      Description: Allow traffic to Container Service
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+    Metadata:
+      SamResourceId: ApplicationLoadBalancerSecurityGroupEgress
+  DocAppApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      SecurityGroups:
+      - Fn::GetAtt:
+        - DocAppApplicationLoadBalancerSecurityGroup
+        - GroupId
+      Subnets:
+      - Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-PrivateSubnetIdA
+      - Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-PrivateSubnetIdB
+      LoadBalancerAttributes:
+      - Key: routing.http.drop_invalid_header_fields.enabled
+        Value: true
+      Scheme: internal
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-DocAppApplicationLoadBalancer
+      - Key: Service
+        Value: Relying Party Doc App stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: DocAppApplicationLoadBalancer
+  DocAppApplicationLoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPort: traffic-port
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: /
+      Port: 8080
+      Protocol: HTTP
+      ProtocolVersion: HTTP1
+      Matcher:
+        HttpCode: 200
+      TargetType: ip
+      UnhealthyThresholdCount: 2
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcId
+      TargetGroupAttributes:
+      - Key: deregistration_delay.timeout_seconds
+        Value: 5
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-DocAppApplicationLoadBalancerTargetGroup
+      - Key: Service
+        Value: Relying Party Doc App stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: DocAppApplicationLoadBalancerTargetGroup
+  DocAppApplicationLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - TargetGroupArn:
+          Ref: DocAppApplicationLoadBalancerTargetGroup
+        Type: forward
+      LoadBalancerArn:
+        Ref: DocAppApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+    Metadata:
+      SamResourceId: DocAppApplicationLoadBalancerListener
+  DocAppApplicationLoadBalancerListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        ForwardConfig:
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: DocAppApplicationLoadBalancerTargetGroup
+            Weight: 1
+      Conditions:
+      - Field: http-header
+        HttpHeaderConfig:
+          HttpHeaderName: User-Agent
+          Values:
+          - Mozilla
+      ListenerArn:
+        Ref: DocAppApplicationLoadBalancerListener
+      Priority: 1
+    Metadata:
+      SamResourceId: DocAppApplicationLoadBalancerListenerRule
+  DocAppApplicationLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for the Doc App Application Load Balancer
+      GroupName:
+        Fn::Join:
+        - '-'
+        - - Ref: AWS::StackName
+          - DocAppApplicationLoadBalancer
+          - Fn::Select:
+            - 4
+            - Fn::Split:
+              - '-'
+              - Fn::Select:
+                - 2
+                - Fn::Split:
+                  - /
+                  - Ref: AWS::StackId
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcId
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-DocAppApplicationLoadBalancerSecurityGroup
+      - Key: Service
+        Value: Relying Party Doc App stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: DocAppApplicationLoadBalancerSecurityGroup
+  DocAppApplicationLoadBalancerSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId:
+        Fn::GetAtt:
+        - DocAppApplicationLoadBalancerSecurityGroup
+        - GroupId
+      CidrIp:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcCidr
+      Description: Allow traffic from the VPC on port 80
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+    Metadata:
+      SamResourceId: DocAppApplicationLoadBalancerSecurityGroupIngress
+  DocAppApplicationLoadBalancerSecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId:
+        Fn::GetAtt:
+        - DocAppApplicationLoadBalancerSecurityGroup
+        - GroupId
+      DestinationSecurityGroupId:
+        Fn::GetAtt:
+        - DocAppContainerServiceSecurityGroup
+        - GroupId
+      Description: Allow traffic to Container Service
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+    Metadata:
+      SamResourceId: DocAppApplicationLoadBalancerSecurityGroupEgress
+  TestClientApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Condition: GenerateTestClient
+    Properties:
+      SecurityGroups:
+      - Fn::GetAtt:
+        - TestClientApplicationLoadBalancerSecurityGroup
+        - GroupId
+      Subnets:
+      - Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-PrivateSubnetIdA
+      - Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-PrivateSubnetIdB
+      LoadBalancerAttributes:
+      - Key: routing.http.drop_invalid_header_fields.enabled
+        Value: true
+      Scheme: internal
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-TestClientApplicationLoadBalancer
+      - Key: Service
+        Value: Relying Party Test Client stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: TestClientApplicationLoadBalancer
+  TestClientApplicationLoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: GenerateTestClient
+    Properties:
+      HealthCheckPort: traffic-port
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: /
+      Port: 8080
+      Protocol: HTTP
+      ProtocolVersion: HTTP1
+      Matcher:
+        HttpCode: 200
+      TargetType: ip
+      UnhealthyThresholdCount: 2
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcId
+      TargetGroupAttributes:
+      - Key: deregistration_delay.timeout_seconds
+        Value: 5
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-TestClientApplicationLoadBalancerTargetGroup
+      - Key: Service
+        Value: Relying Party Test Client stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: TestClientApplicationLoadBalancerTargetGroup
+  TestClientApplicationLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: GenerateTestClient
+    Properties:
+      DefaultActions:
+      - TargetGroupArn:
+          Ref: TestClientApplicationLoadBalancerTargetGroup
+        Type: forward
+      LoadBalancerArn:
+        Ref: TestClientApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+    Metadata:
+      SamResourceId: TestClientApplicationLoadBalancerListener
+  TestClientApplicationLoadBalancerListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Condition: GenerateTestClient
+    Properties:
+      Actions:
+      - Type: forward
+        ForwardConfig:
+          TargetGroups:
+          - TargetGroupArn:
+              Ref: TestClientApplicationLoadBalancerTargetGroup
+            Weight: 1
+      Conditions:
+      - Field: http-header
+        HttpHeaderConfig:
+          HttpHeaderName: User-Agent
+          Values:
+          - Mozilla
+      ListenerArn:
+        Ref: TestClientApplicationLoadBalancerListener
+      Priority: 1
+    Metadata:
+      SamResourceId: TestClientApplicationLoadBalancerListenerRule
+  TestClientApplicationLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: GenerateTestClient
+    Properties:
+      GroupDescription: Security Group for the Test Client Application Load Balancer
+      GroupName:
+        Fn::Join:
+        - '-'
+        - - Ref: AWS::StackName
+          - TestClientApplicationLoadBalancer
+          - Fn::Select:
+            - 4
+            - Fn::Split:
+              - '-'
+              - Fn::Select:
+                - 2
+                - Fn::Split:
+                  - /
+                  - Ref: AWS::StackId
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcId
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-TestClientApplicationLoadBalancerSecurityGroup
+      - Key: Service
+        Value: Relying Party Test Client stub
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: TestClientApplicationLoadBalancerSecurityGroup
+  TestClientApplicationLoadBalancerSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: GenerateTestClient
+    Properties:
+      GroupId:
+        Fn::GetAtt:
+        - TestClientApplicationLoadBalancerSecurityGroup
+        - GroupId
+      CidrIp:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcCidr
+      Description: Allow traffic from the VPC on port 80
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+    Metadata:
+      SamResourceId: TestClientApplicationLoadBalancerSecurityGroupIngress
+  TestClientApplicationLoadBalancerSecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Condition: GenerateTestClient
+    Properties:
+      GroupId:
+        Fn::GetAtt:
+        - TestClientApplicationLoadBalancerSecurityGroup
+        - GroupId
+      DestinationSecurityGroupId:
+        Fn::GetAtt:
+        - TestClientContainerServiceSecurityGroup
+        - GroupId
+      Description: Allow traffic to Container Service
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+    Metadata:
+      SamResourceId: TestClientApplicationLoadBalancerSecurityGroupEgress
+  ApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name:
+        Fn::Sub: ${AWS::StackName}-ApiGateway
+      ProtocolType: HTTP
+      Tags:
+        Service: Relying Party stub
+        Name:
+          Fn::Sub: ${AWS::StackName}-ApiGateway
+        Source: govuk-one-login/relying-party-stub
+        Owner: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: ApiGateway
+  ApiGatewayIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId:
+        Ref: ApiGateway
+      IntegrationType: HTTP_PROXY
+      ConnectionId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcLinkId
+      ConnectionType: VPC_LINK
+      IntegrationMethod: ANY
+      IntegrationUri:
+        Ref: ApplicationLoadBalancerListener
+      PayloadFormatVersion: 1.0
+    Metadata:
+      SamResourceId: ApiGatewayIntegration
+  ApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: ApiGateway
+      RouteKey: ANY /{proxy+}
+      Target:
+        Fn::Sub: integrations/${ApiGatewayIntegration}
+      AuthorizationType: CUSTOM
+      AuthorizerId:
+        Ref: ApiGatewayAuthorizer
+    Metadata:
+      SamResourceId: ApiRoute
+  ApiDefaultStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId:
+        Ref: ApiGateway
+      StageName: $default
+      AutoDeploy: true
+      Tags:
+        Service: Relying Party stub
+        Name:
+          Fn::Sub: ${AWS::StackName}-ApiDefaultStage
+        Source: govuk-one-login/relying-party-stub
+        Owner: di-orchestration@digital.cabinet-office.gov.uk
+      AccessLogSettings:
+        DestinationArn:
+          Fn::GetAtt:
+          - ApiGatewayAccessLogsGroup
+          - Arn
+        Format:
+          Fn::ToJsonString:
+            requestId: $context.requestId
+            ip: $context.identity.sourceIp
+            requestTime: $context.requestTime
+            httpMethod: $context.httpMethod
+            path: $context.path
+            routeKey: $context.routeKey
+            status: $context.status
+            protocol: $context.protocol
+            responseLength: $context.responseLength
+    Metadata:
+      SamResourceId: ApiDefaultStage
+  ApiGatewayAccessLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/apigateway/${AWS::StackName}-ApiGatewayAccessLogsGroup
+      RetentionInDays: 90
+      KmsKeyId:
+        Fn::GetAtt:
+        - KmsKey
+        - Arn
+    Metadata:
+      SamResourceId: ApiGatewayAccessLogsGroup
+  ApiGatewayLambdaFunctionAuthorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      ReservedConcurrentExecutions: 1
+      Handler: authorizer.handler
+      MemorySize: 128
+      Runtime: nodejs20.x
+      Timeout: 900
+      Environment:
+        Variables:
+          ENVIRONMENT:
+            Ref: Environment
+      CodeUri: s3://build-rp-stub-pipeline-githubartifactsourcebucket-3on6neym0kra/a997d42658273607f8f069b8d18fe852/signed_112c5570-f2b8-457f-a4a0-a130e70ed5b0
+    Tags:
+    - Key: Name
+      Value:
+        Fn::Sub: ${AWS::StackName}-ApiGatewayLambdaFunctionAuthorizer
+    - Key: Service
+      Value: Relying Party stub
+    - Key: Source
+      Value: govuk-one-login/relying-party-stub
+    - Key: Owner
+      Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: ApiGatewayLambdaFunctionAuthorizer
+  ApiGatewayAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      Name:
+        Fn::Sub: ${AWS::StackName}-ApiGatewayAuthorizer
+      ApiId:
+        Ref: ApiGateway
+      AuthorizerResultTtlInSeconds: 60
+      IdentitySource:
+      - $context.identity.sourceIp
+      AuthorizerType: REQUEST
+      AuthorizerPayloadFormatVersion: 2.0
+      EnableSimpleResponses: true
+      AuthorizerUri:
+        Fn::Join:
+        - ''
+        - - 'arn:aws:apigateway:'
+          - Ref: AWS::Region
+          - :lambda:path/2015-03-31/functions/
+          - Fn::GetAtt:
+            - ApiGatewayLambdaFunctionAuthorizer
+            - Arn
+          - /invocations
+    Metadata:
+      SamResourceId: ApiGatewayAuthorizer
+  ApiGatewayAuthorizerInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - ApiGatewayLambdaFunctionAuthorizer
+        - Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+        - ''
+        - - 'arn:aws:execute-api:'
+          - Ref: AWS::Region
+          - ':'
+          - Ref: AWS::AccountId
+          - ':'
+          - Ref: ApiGateway
+          - /
+          - authorizers/
+          - Ref: ApiGatewayAuthorizer
+    Metadata:
+      SamResourceId: ApiGatewayAuthorizerInvokePermission
+  DocAppApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name:
+        Fn::Sub: ${AWS::StackName}-DocAppApiGateway
+      ProtocolType: HTTP
+      Tags:
+        Service: Relying Party Doc App stub
+        Name:
+          Fn::Sub: ${AWS::StackName}-DocAppApiGateway
+        Source: govuk-one-login/relying-party-stub
+        Owner: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: DocAppApiGateway
+  DocAppApiGatewayIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId:
+        Ref: DocAppApiGateway
+      IntegrationType: HTTP_PROXY
+      ConnectionId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcLinkId
+      ConnectionType: VPC_LINK
+      IntegrationMethod: ANY
+      IntegrationUri:
+        Ref: DocAppApplicationLoadBalancerListener
+      PayloadFormatVersion: 1.0
+    Metadata:
+      SamResourceId: DocAppApiGatewayIntegration
+  DocAppApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: DocAppApiGateway
+      RouteKey: ANY /{proxy+}
+      Target:
+        Fn::Sub: integrations/${DocAppApiGatewayIntegration}
+      AuthorizationType: CUSTOM
+      AuthorizerId:
+        Ref: DocAppApiGatewayAuthorizer
+    Metadata:
+      SamResourceId: DocAppApiRoute
+  DocAppApiDefaultStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId:
+        Ref: DocAppApiGateway
+      StageName: $default
+      AutoDeploy: true
+      Tags:
+        Service: Relying Party Doc App stub
+        Name:
+          Fn::Sub: ${AWS::StackName}-DocAppApiDefaultStage
+        Source: govuk-one-login/relying-party-stub
+        Owner: di-orchestration@digital.cabinet-office.gov.uk
+      AccessLogSettings:
+        DestinationArn:
+          Fn::GetAtt:
+          - DocAppApiGatewayAccessLogsGroup
+          - Arn
+        Format:
+          Fn::ToJsonString:
+            requestId: $context.requestId
+            ip: $context.identity.sourceIp
+            requestTime: $context.requestTime
+            httpMethod: $context.httpMethod
+            path: $context.path
+            routeKey: $context.routeKey
+            status: $context.status
+            protocol: $context.protocol
+            responseLength: $context.responseLength
+    Metadata:
+      SamResourceId: DocAppApiDefaultStage
+  DocAppApiGatewayAccessLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/apigateway/${AWS::StackName}-DocAppApiGatewayAccessLogsGroup
+      RetentionInDays: 90
+      KmsKeyId:
+        Fn::GetAtt:
+        - KmsKey
+        - Arn
+    Metadata:
+      SamResourceId: DocAppApiGatewayAccessLogsGroup
+  DocAppApiGatewayAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      Name:
+        Fn::Sub: ${AWS::StackName}-DocAppApiGatewayAuthorizer
+      ApiId:
+        Ref: DocAppApiGateway
+      AuthorizerResultTtlInSeconds: 60
+      IdentitySource:
+      - $context.identity.sourceIp
+      AuthorizerType: REQUEST
+      AuthorizerPayloadFormatVersion: 2.0
+      EnableSimpleResponses: true
+      AuthorizerUri:
+        Fn::Join:
+        - ''
+        - - 'arn:aws:apigateway:'
+          - Ref: AWS::Region
+          - :lambda:path/2015-03-31/functions/
+          - Fn::GetAtt:
+            - ApiGatewayLambdaFunctionAuthorizer
+            - Arn
+          - /invocations
+    Metadata:
+      SamResourceId: DocAppApiGatewayAuthorizer
+  DocAppApiGatewayAuthorizerInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - ApiGatewayLambdaFunctionAuthorizer
+        - Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+        - ''
+        - - 'arn:aws:execute-api:'
+          - Ref: AWS::Region
+          - ':'
+          - Ref: AWS::AccountId
+          - ':'
+          - Ref: DocAppApiGateway
+          - /
+          - authorizers/
+          - Ref: DocAppApiGatewayAuthorizer
+    Metadata:
+      SamResourceId: DocAppApiGatewayAuthorizerInvokePermission
+  TestClientApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Condition: GenerateTestClient
+    Properties:
+      Name:
+        Fn::Sub: ${AWS::StackName}-TestClientApiGateway
+      ProtocolType: HTTP
+      Tags:
+        Service: Relying Party Test Client stub
+        Name:
+          Fn::Sub: ${AWS::StackName}-TestClientApiGateway
+        Source: govuk-one-login/relying-party-stub
+        Owner: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: TestClientApiGateway
+  TestClientApiGatewayIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Condition: GenerateTestClient
+    Properties:
+      ApiId:
+        Ref: TestClientApiGateway
+      IntegrationType: HTTP_PROXY
+      ConnectionId:
+        Fn::ImportValue:
+          Fn::Sub: ${VpcStackName}-VpcLinkId
+      ConnectionType: VPC_LINK
+      IntegrationMethod: ANY
+      IntegrationUri:
+        Ref: TestClientApplicationLoadBalancerListener
+      PayloadFormatVersion: 1.0
+    Metadata:
+      SamResourceId: TestClientApiGatewayIntegration
+  TestClientApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Condition: GenerateTestClient
+    Properties:
+      ApiId:
+        Ref: TestClientApiGateway
+      RouteKey: ANY /{proxy+}
+      Target:
+        Fn::Sub: integrations/${TestClientApiGatewayIntegration}
+      AuthorizationType: CUSTOM
+      AuthorizerId:
+        Ref: TestClientApiGatewayAuthorizer
+    Metadata:
+      SamResourceId: TestClientApiRoute
+  TestClientApiDefaultStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Condition: GenerateTestClient
+    Properties:
+      ApiId:
+        Ref: TestClientApiGateway
+      StageName: $default
+      AutoDeploy: true
+      Tags:
+        Service: Relying Party Test Client stub
+        Name:
+          Fn::Sub: ${AWS::StackName}-TestClientApiDefaultStage
+        Source: govuk-one-login/relying-party-stub
+        Owner: di-orchestration@digital.cabinet-office.gov.uk
+      AccessLogSettings:
+        DestinationArn:
+          Fn::GetAtt:
+          - TestClientApiGatewayAccessLogsGroup
+          - Arn
+        Format:
+          Fn::ToJsonString:
+            requestId: $context.requestId
+            ip: $context.identity.sourceIp
+            requestTime: $context.requestTime
+            httpMethod: $context.httpMethod
+            path: $context.path
+            routeKey: $context.routeKey
+            status: $context.status
+            protocol: $context.protocol
+            responseLength: $context.responseLength
+    Metadata:
+      SamResourceId: TestClientApiDefaultStage
+  TestClientApiGatewayAccessLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: GenerateTestClient
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/apigateway/${AWS::StackName}-TestClientApiGatewayAccessLogsGroup
+      RetentionInDays: 90
+      KmsKeyId:
+        Fn::GetAtt:
+        - KmsKey
+        - Arn
+    Metadata:
+      SamResourceId: TestClientApiGatewayAccessLogsGroup
+  TestClientApiGatewayAuthorizer:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Condition: GenerateTestClient
+    Properties:
+      Name:
+        Fn::Sub: ${AWS::StackName}-TestClientApiGatewayAuthorizer
+      ApiId:
+        Ref: TestClientApiGateway
+      AuthorizerResultTtlInSeconds: 60
+      IdentitySource:
+      - $context.identity.sourceIp
+      AuthorizerType: REQUEST
+      AuthorizerPayloadFormatVersion: 2.0
+      EnableSimpleResponses: true
+      AuthorizerUri:
+        Fn::Join:
+        - ''
+        - - 'arn:aws:apigateway:'
+          - Ref: AWS::Region
+          - :lambda:path/2015-03-31/functions/
+          - Fn::GetAtt:
+            - ApiGatewayLambdaFunctionAuthorizer
+            - Arn
+          - /invocations
+    Metadata:
+      SamResourceId: TestClientApiGatewayAuthorizer
+  TestClientApiGatewayAuthorizerInvokePermission:
+    Type: AWS::Lambda::Permission
+    Condition: GenerateTestClient
+    Properties:
+      FunctionName:
+        Fn::GetAtt:
+        - ApiGatewayLambdaFunctionAuthorizer
+        - Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+        - ''
+        - - 'arn:aws:execute-api:'
+          - Ref: AWS::Region
+          - ':'
+          - Ref: AWS::AccountId
+          - ':'
+          - Ref: TestClientApiGateway
+          - /
+          - authorizers/
+          - Ref: TestClientApiGatewayAuthorizer
+    Metadata:
+      SamResourceId: TestClientApiGatewayAuthorizerInvokePermission
+  KmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS:
+              Fn::Sub: arn:aws:iam::${AWS::AccountId}:root
+          Action:
+          - kms:*
+          Resource: '*'
+        - Effect: Allow
+          Principal:
+            Service:
+              Fn::Sub: logs.${AWS::Region}.amazonaws.com
+          Action:
+          - kms:Encrypt*
+          - kms:Decrypt*
+          - kms:ReEncrypt*
+          - kms:GenerateDataKey*
+          - kms:Describe*
+          Resource: '*'
+          Condition:
+            ArnLike:
+              kms:EncryptionContext:aws:logs:arn:
+                Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+      Tags:
+      - Key: Service
+        Value: Relying Party stub
+      - Key: Name
+        Value:
+          Fn::Sub: ${AWS::StackName}-KmsKey
+      - Key: Source
+        Value: govuk-one-login/relying-party-stub
+      - Key: Owner
+        Value: di-orchestration@digital.cabinet-office.gov.uk
+    Metadata:
+      SamResourceId: KmsKey
+  RpConfigurationSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub: /stubs/rp-${Environment}/CONFIGURATION
+      KmsKeyId:
+        Fn::GetAtt:
+        - KmsKey
+        - Arn
+    Metadata:
+      SamResourceId: RpConfigurationSecret
+  ConfigurationSecretsManagerAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - secretsmanager:GetSecretValue
+          Resource:
+            Ref: RpConfigurationSecret
+        - Effect: Allow
+          Action: kms:Decrypt
+          Resource:
+            Fn::GetAtt:
+            - KmsKey
+            - Arn
+    Metadata:
+      SamResourceId: ConfigurationSecretsManagerAccessPolicy
+  IdentitySigningPublicKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub: /stubs/rp-${Environment}/IDENTITY_SIGNING_PUBLIC_KEY
+      KmsKeyId:
+        Fn::GetAtt:
+        - KmsKey
+        - Arn
+    Metadata:
+      SamResourceId: IdentitySigningPublicKeySecret
+  ClientPrivateKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub: /stubs/rp-${Environment}/CLIENT_PRIVATE_KEY
+      KmsKeyId:
+        Fn::GetAtt:
+        - KmsKey
+        - Arn
+    Metadata:
+      SamResourceId: ClientPrivateKeySecret
+  DocAppClientPrivateKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name:
+        Fn::Sub: /stubs/rp-${Environment}/DOC_APP_CLIENT_PRIVATE_KEY
+      KmsKeyId:
+        Fn::GetAtt:
+        - KmsKey
+        - Arn
+    Metadata:
+      SamResourceId: DocAppClientPrivateKeySecret
+  TestClientClientPrivateKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Condition: GenerateTestClient
+    Properties:
+      Name:
+        Fn::Sub: /stubs/rp-${Environment}/TEST_CLIENT_CLIENT_PRIVATE_KEY
+      KmsKeyId:
+        Fn::GetAtt:
+        - KmsKey
+        - Arn
+    Metadata:
+      SamResourceId: TestClientClientPrivateKeySecret
+Outputs:
+  RpApiId:
+    Value:
+      Ref: ApiGateway
+    Export:
+      Name:
+        Fn::Sub: RpApiGateway-${Environment}
+  DocAppApiId:
+    Value:
+      Ref: DocAppApiGateway
+    Export:
+      Name:
+        Fn::Sub: DocAppApiGateway-${Environment}
+  TestClientApiId:
+    Value:
+      Fn::If:
+      - GenerateTestClient
+      - Ref: TestClientApiGateway
+      - no-value
+    Export:
+      Name:
+        Fn::Sub: TestClientApiGateway-${Environment}
