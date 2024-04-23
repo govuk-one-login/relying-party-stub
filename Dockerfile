@@ -9,7 +9,7 @@ RUN gradle clean build --no-daemon
 COPY --chown=gradle:gradle src src
 RUN gradle clean build installDist --no-daemon
 
-FROM amazoncorretto:22.0.0-alpine3.17 as runtime
+FROM amazoncorretto:22.0.1-alpine3.17 as runtime
 WORKDIR /home
 COPY --from=build /home/gradle/src/build/install/src .
 
