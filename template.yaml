@@ -82,8 +82,8 @@ Mappings:
       docAppStubUrl: https://doc-app-rp-staging.build.stubs.account.gov.uk
       testClientDefaultClientId: nsR2wZ7EebJ2VOzE1LUa9iAVadunWQP3
       testClientStubUrl: https://perf-test-rp-staging.build.stubs.account.gov.uk
-      testClientInstances: 4
-      testClientInstancesmincount: 4
+      testClientInstances: 1
+      testClientInstancesmincount: 1
       testClientInstancesmaxcount: 30
       ALBPolicyTargetValue: 2000
       testClientCpu: 1024
