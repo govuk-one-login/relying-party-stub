@@ -16,8 +16,15 @@ public class HomeHandler implements Route {
 
     @Override
     public Object handle(Request request, Response response) {
-        var relyingPartyConfig =
-                Configuration.getRelyingPartyConfig(request.cookie("relyingParty"));
+        String relyingPartyString;
+        if (request.queryParams().contains("relyingParty")) {
+            relyingPartyString = request.queryParams("relyingParty");
+            response.cookie("/", "relyingParty", relyingPartyString, 3600, false, true);
+        } else {
+            relyingPartyString = request.cookie("relyingParty");
+        }
+
+        var relyingPartyConfig = Configuration.getRelyingPartyConfig(relyingPartyString);
         var model = new HashMap<>();
         model.put("servicename", relyingPartyConfig.serviceName());
         LOG.info(
