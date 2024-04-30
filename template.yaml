@@ -414,7 +414,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/ecs/${AWS::StackName}
-      RetentionInDays: 90
+      RetentionInDays: 30
       KmsKeyId: !GetAtt KmsKey.Arn
 
   TaskLogGroupSubscriptionFilter:
@@ -529,7 +529,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/ecs/${AWS::StackName}DocApp
-      RetentionInDays: 90
+      RetentionInDays: 30
       KmsKeyId: !GetAtt KmsKey.Arn
 
   DocAppTaskLogGroupSubscriptionFilter:
@@ -587,7 +587,7 @@ Resources:
     Condition: GenerateTestClient
     Properties:
       LogGroupName: !Sub /aws/ecs/${AWS::StackName}TestClient
-      RetentionInDays: 90
+      RetentionInDays: 30
       KmsKeyId: !GetAtt KmsKey.Arn
 
   #
@@ -1058,7 +1058,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-ApiGatewayAccessLogsGroup
-      RetentionInDays: 90
+      RetentionInDays: 30
       KmsKeyId: !GetAtt KmsKey.Arn
 
   ApiGatewayLambdaFunctionAuthorizer:
@@ -1183,7 +1183,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-DocAppApiGatewayAccessLogsGroup
-      RetentionInDays: 90
+      RetentionInDays: 30
       KmsKeyId: !GetAtt KmsKey.Arn
 
   DocAppApiGatewayAuthorizer:
@@ -1289,7 +1289,7 @@ Resources:
     Condition: GenerateTestClient
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-TestClientApiGatewayAccessLogsGroup
-      RetentionInDays: 90
+      RetentionInDays: 30
       KmsKeyId: !GetAtt KmsKey.Arn
 
   TestClientApiGatewayAuthorizer:
