@@ -30,7 +30,7 @@ ext {
 }
 
 dependencies {
-    implementation(platform("software.amazon.awssdk:bom:2.25.46"))
+    implementation(platform("software.amazon.awssdk:bom:2.25.47"))
     implementation "com.sparkjava:spark-core:2.9.4",
             "com.sparkjava:spark-template-mustache:2.7.1",
             "com.nimbusds:oauth2-oidc-sdk:11.10.1",
