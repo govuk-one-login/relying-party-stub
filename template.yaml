@@ -60,7 +60,7 @@ Mappings:
     dev:
       defaultClientId: 1Dlz5rYheTqzZASRMmSBtgFIYgZlysnQ
       stubUrl: https://rp-dev.build.stubs.account.gov.uk
-      docappDefaultClientId: 1P5TCzX3asYnujtNyDYwEf30CopXmdYj
+      docappDefaultClientId: nLGqdxViV4guZ0ky61Dxr4ERFHYgxsp8
       docAppStubUrl: https://doc-app-rp-dev.build.stubs.account.gov.uk
     build:
       defaultClientId: P5OQvWV21U0OW7U5g27d6MU2LLznYYaM
