@@ -39,7 +39,7 @@ dependencies {
             "org.apache.logging.log4j:log4j-slf4j2-impl:${dependencyVersions.log4j}",
             "org.apache.httpcomponents:httpclient:4.5.14",
             'net.minidev:json-smart:2.5.1',
-            "com.google.code.gson:gson:2.10.1",
+            "com.google.code.gson:gson:2.11.0",
             "software.amazon.awssdk:secretsmanager",
             'com.fasterxml.jackson.core:jackson-databind:2.17.1'
     implementation('org.eclipse.jetty:jetty-server') {
