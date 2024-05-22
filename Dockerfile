@@ -1,4 +1,4 @@
-FROM gradle:7.6.4-jdk17@sha256:732ce1a657416ddb77bf12492b18c0ee51555bcffed4bd4e336975196ffd9f27 AS build
+FROM gradle:7.6.4-jdk17@sha256:5fe2bf36d6161bfe003fd4c74198c35f357e8f6ffe2679a95456bce6c2c447cb AS build
 WORKDIR /home/gradle/src
 
 COPY --chown=gradle:gradle gradlew build.gradle ./
