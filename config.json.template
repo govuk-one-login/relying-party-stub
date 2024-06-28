@@ -1,7 +1,7 @@
 {
   "T8qDL0betfsw1VKe03XnrPn79PyvnTbd" : {
     "client_private_key": "placeholder",
-    "identity_signing_public_key": null,
+    "identity_signing_key_url": "https://identity.staging.account.gov.uk/.well-known/did.json",
     "account_management_url": "https://home.build.account.gov.uk",
     "client_id": "T8qDL0betfsw1VKe03XnrPn79PyvnTbd",
     "client_type": "web",
@@ -13,7 +13,7 @@
   },
   "2kRDdPth7CLEXDfdO4xpFp2pJBQlxu3j": {
     "client_private_key": "placeholder",
-    "identity_signing_public_key": null,
+    "identity_signing_key_url": null,
     "account_management_url": "https://home.build.account.gov.uk",
     "client_id": "2kRDdPth7CLEXDfdO4xpFp2pJBQlxu3j",
     "client_type": "app",

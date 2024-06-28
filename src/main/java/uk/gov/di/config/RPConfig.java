@@ -2,7 +2,7 @@ package uk.gov.di.config;
 
 public record RPConfig(
         String clientPrivateKey,
-        String identitySigningPublicKey,
+        String identitySigningKeyUrl,
         String accountManagementUrl,
         String clientId,
         String clientType,
