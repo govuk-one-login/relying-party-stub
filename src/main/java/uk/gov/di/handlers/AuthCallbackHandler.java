@@ -40,6 +40,7 @@ public class AuthCallbackHandler implements Route {
         model.put("id_token", tokens.getIDToken().getParsedString());
         model.put("access_token", tokens.getAccessToken().toJSONString());
         model.put("user_info_response", userInfo.toJSONString());
+        model.put("journey_id", tokens.getIDToken().getJWTClaimsSet().getStringClaim("sid"));
 
         var templateName = "userinfo.mustache";
         if (relyingPartyConfig.clientType().equals("app")) {
