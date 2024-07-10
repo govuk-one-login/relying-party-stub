@@ -41,7 +41,8 @@ dependencies {
             'net.minidev:json-smart:2.5.1',
             "com.google.code.gson:gson:2.11.0",
             "software.amazon.awssdk:secretsmanager",
-            'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+            'com.fasterxml.jackson.core:jackson-databind:2.17.2',
+            "com.nimbusds:nimbus-jose-jwt:9.40"
     implementation('org.eclipse.jetty:jetty-server') {
         version {
             strictly '10.0.17'
