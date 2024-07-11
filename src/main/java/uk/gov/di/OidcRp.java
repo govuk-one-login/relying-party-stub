@@ -1,16 +1,20 @@
 package uk.gov.di;
 
+import com.google.gson.Gson;
 import uk.gov.di.handlers.AuthCallbackHandler;
 import uk.gov.di.handlers.AuthorizeHandler;
 import uk.gov.di.handlers.BackChannelLogoutHandler;
 import uk.gov.di.handlers.ExceptionHandler;
 import uk.gov.di.handlers.HomeHandler;
 import uk.gov.di.handlers.InternalServerErrorHandler;
+import uk.gov.di.handlers.JwkHandler;
 import uk.gov.di.handlers.RelyingPartyGetHandler;
 import uk.gov.di.handlers.RelyingPartyPostHandler;
 import uk.gov.di.handlers.SignOutHandler;
 import uk.gov.di.handlers.SignedOutHandler;
 import uk.gov.di.utils.ResponseHeaderHelper;
+
+import java.security.interfaces.RSAPublicKey;
 
 import static spark.Spark.after;
 import static spark.Spark.exception;
@@ -20,6 +24,7 @@ import static spark.Spark.path;
 import static spark.Spark.port;
 import static spark.Spark.post;
 import static spark.Spark.staticFileLocation;
+import static uk.gov.di.config.Configuration.getClientsPublicKeys;
 
 public class OidcRp {
     public OidcRp() {
@@ -40,6 +45,7 @@ public class OidcRp {
         var exceptionHandler = new ExceptionHandler();
         var relyingPartyGetHandler = new RelyingPartyGetHandler();
         var relyingPartyPostHandler = new RelyingPartyPostHandler();
+        var gson = new Gson();
 
         get("/", homeHandler);
         path(
@@ -54,6 +60,17 @@ public class OidcRp {
         post("/backchannel-logout", new BackChannelLogoutHandler());
         get("/relying-party", relyingPartyGetHandler);
         post("/relying-party", relyingPartyPostHandler);
+        getClientsPublicKeys()
+                .forEach(
+                        clientIdAndPubKey -> {
+                            get(
+                                    "/"
+                                            + clientIdAndPubKey.get("client_id")
+                                            + "/.well-known/jwks.json",
+                                    new JwkHandler(
+                                            (RSAPublicKey) clientIdAndPubKey.get("public_key")),
+                                    gson::toJson);
+                        });
 
         exception(Exception.class, exceptionHandler);
 
