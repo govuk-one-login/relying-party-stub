@@ -9,9 +9,12 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueReques
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Configuration extends HashMap<String, RPConfig> {
     private static final String LOCAL_CONFIGURATION_SOURCE = "local";
@@ -108,5 +111,9 @@ public class Configuration extends HashMap<String, RPConfig> {
 
     private static String defaultClientId() {
         return System.getenv().getOrDefault("DEFAULT_CLIENT_ID", null);
+    }
+
+    public static Stream<Map<String, Serializable>> getClientsPublicKeys() {
+        return getInstance().values().stream().map(RPConfig::jwksConfiguration);
     }
 }
