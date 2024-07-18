@@ -4,6 +4,7 @@ import uk.gov.di.utils.PrivateKeyReader;
 
 import java.io.Serializable;
 import java.util.Map;
+import java.util.UUID;
 
 public record RPConfig(
         String clientPrivateKey,
@@ -16,6 +17,9 @@ public record RPConfig(
         String opBaseUrl,
         String tokenClientSecret,
         String inheritedIdentityJwtSigningKey) {
+
+    private static final String kid = UUID.randomUUID().toString();
+
     public String authCallbackUrl() {
         return Configuration.getStubUrl() + "/oidc/authorization-code/callback";
     }
@@ -29,6 +33,8 @@ public record RPConfig(
                 "client_id",
                 clientId(),
                 "public_key",
-                new PrivateKeyReader(clientPrivateKey()).getPublicKey());
+                new PrivateKeyReader(clientPrivateKey()).getPublicKey(),
+                "public_key_id",
+                kid);
     }
 }

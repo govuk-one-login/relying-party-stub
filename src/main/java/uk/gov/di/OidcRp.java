@@ -14,8 +14,6 @@ import uk.gov.di.handlers.SignOutHandler;
 import uk.gov.di.handlers.SignedOutHandler;
 import uk.gov.di.utils.ResponseHeaderHelper;
 
-import java.security.interfaces.RSAPublicKey;
-
 import static spark.Spark.after;
 import static spark.Spark.exception;
 import static spark.Spark.get;
@@ -67,8 +65,7 @@ public class OidcRp {
                                     "/"
                                             + clientIdAndPubKey.get("client_id")
                                             + "/.well-known/jwks.json",
-                                    new JwkHandler(
-                                            (RSAPublicKey) clientIdAndPubKey.get("public_key")),
+                                    new JwkHandler(clientIdAndPubKey),
                                     gson::toJson);
                         });
 
