@@ -372,7 +372,16 @@ public class Oidc {
     }
 
     private SignedJWT signJwtWithClaims(JWTClaimsSet jwtClaimsSet) {
-        var signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.RS512), jwtClaimsSet);
+        JWSHeader header =
+                new JWSHeader.Builder(JWSAlgorithm.RS512)
+                        .keyID(
+                                relyingPartyConfig
+                                        .jwksConfiguration()
+                                        .get("public_key_id")
+                                        .toString())
+                        .build();
+
+        var signedJWT = new SignedJWT(header, jwtClaimsSet);
 
         try {
             signedJWT.sign(new RSASSASigner(this.privateKeyReader.get()));
