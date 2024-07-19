@@ -1,6 +1,8 @@
 package uk.gov.di;
 
 import com.google.gson.Gson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.gov.di.handlers.AuthCallbackHandler;
 import uk.gov.di.handlers.AuthorizeHandler;
 import uk.gov.di.handlers.BackChannelLogoutHandler;
@@ -25,6 +27,8 @@ import static spark.Spark.staticFileLocation;
 import static uk.gov.di.config.Configuration.getClientsPublicKeys;
 
 public class OidcRp {
+    private static final Logger LOG = LoggerFactory.getLogger(OidcRp.class);
+
     public OidcRp() {
         staticFileLocation("/public");
         port(8080);
@@ -61,6 +65,7 @@ public class OidcRp {
         getClientsPublicKeys()
                 .forEach(
                         clientIdAndPubKey -> {
+                            LOG.info("clientIdAndPubKey: " + clientIdAndPubKey);
                             get(
                                     "/"
                                             + clientIdAndPubKey.get("client_id")

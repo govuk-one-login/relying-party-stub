@@ -2,6 +2,8 @@ package uk.gov.di.config;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.GsonBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
@@ -17,6 +19,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Configuration extends HashMap<String, RPConfig> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
     private static final String LOCAL_CONFIGURATION_SOURCE = "local";
     private static Configuration instance;
 
@@ -114,6 +118,9 @@ public class Configuration extends HashMap<String, RPConfig> {
     }
 
     public static Stream<Map<String, Serializable>> getClientsPublicKeys() {
+        LOG.info(
+                "getClientsPublicKeys: "
+                        + getInstance().values().stream().map(RPConfig::jwksConfiguration));
         return getInstance().values().stream().map(RPConfig::jwksConfiguration);
     }
 }
