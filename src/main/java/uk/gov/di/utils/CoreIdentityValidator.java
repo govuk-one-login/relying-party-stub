@@ -72,9 +72,8 @@ public class CoreIdentityValidator {
     private ECKey fetchKeyFromDid(String kid) {
         var kidParts = kid.split("#");
         var controller = kidParts[0];
-        var keyId = kidParts[1];
         var did = DIDDocument.fromJson(fetchDidDocument());
-        var verificationMethod = getVerificationMethod(did, keyId);
+        var verificationMethod = getVerificationMethod(did, kid);
         verifyController(controller, verificationMethod);
 
         return getEcKeyFromVerificationMethod(verificationMethod);

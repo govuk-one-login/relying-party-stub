@@ -156,21 +156,21 @@ class CoreIdentityValidatorTest {
                 assertThrows(
                         RuntimeException.class,
                         () -> underTest.isValid(createJws("controller#mismatched-kid")));
-        assertEquals("No key found in DID with ID mismatched-kid", thrownException.getMessage());
+        assertEquals(
+                "No key found in DID with ID controller#mismatched-kid",
+                thrownException.getMessage());
     }
 
     @Test
     void throwsExceptionWhenKidControllerDoesNotMatchDidDocument() {
-        configureDidDocumentResponse(SIGNING_KEY, CONTROLLER);
+        configureDidDocumentResponse(SIGNING_KEY, CONTROLLER, "mismatched-controller");
 
         var thrownException =
                 assertThrows(
                         RuntimeException.class,
-                        () ->
-                                underTest.isValid(
-                                        createJws("mismatched-controller#" + SIGNING_KEY_ID)));
+                        () -> underTest.isValid(createJws(CONTROLLER + "#" + SIGNING_KEY_ID)));
         assertEquals(
-                "Controller in User Identity kid does not match DID key value: mismatched-controller did:web:identity.test.account.gov.uk",
+                "Controller in User Identity kid does not match DID key value: did:web:identity.test.account.gov.uk mismatched-controller",
                 thrownException.getMessage());
     }
 
@@ -202,7 +202,11 @@ class CoreIdentityValidatorTest {
     }
 
     private void configureDidDocumentResponse(ECKey ecKey, String controller) {
-        var assertion = buildDidAssertion(ecKey, controller);
+        configureDidDocumentResponse(ecKey, controller, controller);
+    }
+
+    private void configureDidDocumentResponse(ECKey ecKey, String keyIdPrefix, String controller) {
+        var assertion = buildDidAssertion(ecKey, controller, keyIdPrefix);
         var documentResponse = buildDidDocumentResponse(assertion, controller);
         var httpResponse = mock(HttpResponse.class);
         when(httpResponse.statusCode()).thenReturn(200);
@@ -214,12 +218,12 @@ class CoreIdentityValidatorTest {
         }
     }
 
-    private String buildDidAssertion(ECKey ecKey, String controller) {
+    private String buildDidAssertion(ECKey ecKey, String controller, String keyIdPrefix) {
         var jwk = ecKey.toPublicJWK();
         return String.format(
                 """
                         {
-                              "id": "%s",
+                              "id": "%s#%s",
                               "type": "JsonWebKey",
                               "controller": "%s",
                               "publicKeyJwk": {
@@ -230,7 +234,7 @@ class CoreIdentityValidatorTest {
                               }
                             }
                         """,
-                jwk.getKeyID(), controller, jwk.getX(), jwk.getY());
+                keyIdPrefix, jwk.getKeyID(), controller, jwk.getX(), jwk.getY());
     }
 
     private String buildDidDocumentResponse(String assertionMethod, String controller) {
