@@ -25,3 +25,11 @@ updates:
     target-branch: main
     labels:
       - dependabot
+  - package-ecosystem: npm
+    directory: "/scripts"
+    schedule:
+      interval: daily
+      time: "03:00"
+    target-branch: main
+    labels:
+      - dependabot
