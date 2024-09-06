@@ -35,7 +35,7 @@ dependencies {
         implementation("org.eclipse.jetty:jetty-webapp:[10.0.23,11)")
     }
 
-    implementation(platform("software.amazon.awssdk:bom:2.27.19"))
+    implementation(platform("software.amazon.awssdk:bom:2.27.20"))
     implementation "com.sparkjava:spark-core:2.9.4",
             "com.sparkjava:spark-template-mustache:2.7.1",
             "com.nimbusds:oauth2-oidc-sdk:11.19",
