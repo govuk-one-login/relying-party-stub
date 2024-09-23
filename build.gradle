@@ -48,7 +48,7 @@ dependencies {
             "software.amazon.awssdk:secretsmanager",
             'com.fasterxml.jackson.core:jackson-databind:2.17.2',
             "com.nimbusds:nimbus-jose-jwt:9.40"
-    implementation("decentralized-identity:did-common-java:1.13.0")
+    implementation("decentralized-identity:did-common-java:1.14.0")
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.0',
             'org.mockito:mockito-inline:5.2.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.0'
