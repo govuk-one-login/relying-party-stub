@@ -49,7 +49,7 @@ dependencies {
             'com.fasterxml.jackson.core:jackson-databind:2.18.0',
             "com.nimbusds:nimbus-jose-jwt:9.41.2"
     implementation("decentralized-identity:did-common-java:1.14.0")
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.0',
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.2',
             'org.mockito:mockito-inline:5.2.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.0'
 }
