@@ -46,7 +46,7 @@ dependencies {
             'net.minidev:json-smart:2.5.1',
             "com.google.code.gson:gson:2.11.0",
             "software.amazon.awssdk:secretsmanager",
-            'com.fasterxml.jackson.core:jackson-databind:2.17.2',
+            'com.fasterxml.jackson.core:jackson-databind:2.18.0',
             "com.nimbusds:nimbus-jose-jwt:9.41.1"
     implementation("decentralized-identity:did-common-java:1.14.0")
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.0',
