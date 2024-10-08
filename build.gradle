@@ -50,14 +50,14 @@ dependencies {
             "com.nimbusds:nimbus-jose-jwt:9.41.2"
     implementation("decentralized-identity:did-common-java:1.14.0")
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.2',
-            'org.mockito:mockito-inline:5.2.0'
+            'org.mockito:mockito-core:5.14.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.2'
 }
 
 spotless {
     java {
         target "**/*.java"
-        googleJavaFormat("1.13.0").aosp()
+        googleJavaFormat("1.24.0").aosp()
         importOrder "", "javax", "java", "\\#"
     }
 
@@ -80,8 +80,8 @@ test {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 run {
