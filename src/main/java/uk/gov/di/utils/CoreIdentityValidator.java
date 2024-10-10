@@ -98,10 +98,10 @@ public class CoreIdentityValidator {
                             + verificationMethod.getController().toString());
         }
         var expectedControllerFromHost = "did:web:" + didKeyUri.getAuthority();
-        if (!controller.equals(expectedControllerFromHost)) {
+        if (!controller.replace("%3A", ":").equals(expectedControllerFromHost)) {
             throw new RuntimeException(
                     "Controller in User Identity kid does not match DID key URL: "
-                            + controller
+                            + controller.replace("%3A", ":")
                             + " "
                             + didKeyUri);
         }
