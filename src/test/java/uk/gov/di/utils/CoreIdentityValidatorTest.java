@@ -17,10 +17,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import uk.gov.di.config.RPConfig;
+import uk.gov.di.helpers.TestClock;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
 import java.net.http.HttpResponse;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -28,6 +33,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CoreIdentityValidatorTest {
@@ -57,6 +65,7 @@ class CoreIdentityValidatorTest {
         var rpConfig = mock(RPConfig.class);
         when(rpConfig.identitySigningKeyUrl()).thenReturn(DID_URL);
         underTest = CoreIdentityValidator.createValidator(rpConfig);
+        reset(httpClient);
     }
 
     @AfterAll
@@ -112,6 +121,52 @@ class CoreIdentityValidatorTest {
     }
 
     @Test
+    void onlyFetchesKeyOnceIfMaxAgeIsNonZero() throws IOException, InterruptedException {
+        configureDidDocumentResponse(SIGNING_KEY, CONTROLLER, CONTROLLER, 60);
+        var resultOne = underTest.isValid(createJws(CONTROLLER + "#" + SIGNING_KEY_ID));
+        assertEquals(CoreIdentityValidator.Result.VALID, resultOne);
+        var resultTwo = underTest.isValid(createJws(CONTROLLER + "#" + SIGNING_KEY_ID));
+        assertEquals(CoreIdentityValidator.Result.VALID, resultTwo);
+
+        verify(httpClient, times(1)).send(any(), any());
+    }
+
+    @Test
+    void fetchesKeyEachTimeIfMaxAgeIsZero() throws IOException, InterruptedException {
+        configureDidDocumentResponse(SIGNING_KEY, CONTROLLER, CONTROLLER, 0);
+        var resultOne = underTest.isValid(createJws(CONTROLLER + "#" + SIGNING_KEY_ID));
+        assertEquals(CoreIdentityValidator.Result.VALID, resultOne);
+        var resultTwo = underTest.isValid(createJws(CONTROLLER + "#" + SIGNING_KEY_ID));
+        assertEquals(CoreIdentityValidator.Result.VALID, resultTwo);
+
+        verify(httpClient, times(2)).send(any(), any());
+    }
+
+    @Test
+    void expiresTheKeyCorrectly() throws IOException, InterruptedException {
+        TestClock testClock = new TestClock(Instant.ofEpochSecond(0), ZoneId.systemDefault());
+        var rpConfig = mock(RPConfig.class);
+        when(rpConfig.identitySigningKeyUrl()).thenReturn(DID_URL);
+        configureDidDocumentResponse(SIGNING_KEY, CONTROLLER, CONTROLLER, 60);
+        var validator = CoreIdentityValidator.createValidator(rpConfig, testClock);
+
+        var resultOne = validator.isValid(createJws(CONTROLLER + "#" + SIGNING_KEY_ID));
+        assertEquals(CoreIdentityValidator.Result.VALID, resultOne);
+
+        testClock.setInstant(Instant.ofEpochSecond(30));
+
+        var resultTwo = validator.isValid(createJws(CONTROLLER + "#" + SIGNING_KEY_ID));
+        assertEquals(CoreIdentityValidator.Result.VALID, resultTwo);
+
+        testClock.setInstant(Instant.ofEpochSecond(61));
+
+        var resultThree = validator.isValid(createJws(CONTROLLER + "#" + SIGNING_KEY_ID));
+        assertEquals(CoreIdentityValidator.Result.VALID, resultThree);
+
+        verify(httpClient, times(2)).send(any(), any());
+    }
+
+    @Test
     void failsWhenSignatureIsInvalid() throws JOSEException {
         var didSigningKey =
                 new ECKeyGenerator(Curve.P_256)
@@ -163,7 +218,7 @@ class CoreIdentityValidatorTest {
 
     @Test
     void throwsExceptionWhenKidControllerDoesNotMatchDidDocument() {
-        configureDidDocumentResponse(SIGNING_KEY, CONTROLLER, "mismatched-controller");
+        configureDidDocumentResponse(SIGNING_KEY, CONTROLLER, "mismatched-controller", 0);
 
         var thrownException =
                 assertThrows(
@@ -202,14 +257,19 @@ class CoreIdentityValidatorTest {
     }
 
     private void configureDidDocumentResponse(ECKey ecKey, String controller) {
-        configureDidDocumentResponse(ecKey, controller, controller);
+        configureDidDocumentResponse(ecKey, controller, controller, 0);
     }
 
-    private void configureDidDocumentResponse(ECKey ecKey, String keyIdPrefix, String controller) {
+    private void configureDidDocumentResponse(
+            ECKey ecKey, String keyIdPrefix, String controller, Integer maxAge) {
         var assertion = buildDidAssertion(ecKey, controller, keyIdPrefix);
         var documentResponse = buildDidDocumentResponse(assertion, controller);
         var httpResponse = mock(HttpResponse.class);
         when(httpResponse.statusCode()).thenReturn(200);
+        var httpHeaders = mock(HttpHeaders.class);
+        when(httpHeaders.firstValue("cache-control"))
+                .thenReturn(Optional.of(String.format("max-age=%s, private", maxAge.toString())));
+        when(httpResponse.headers()).thenReturn(httpHeaders);
         when(httpResponse.body()).thenReturn(documentResponse);
         try {
             when(httpClient.send(any(), any())).thenReturn(httpResponse);
