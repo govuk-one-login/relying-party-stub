@@ -12,9 +12,14 @@ import uk.gov.di.config.RPConfig;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.text.ParseException;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import static java.net.http.HttpClient.newHttpClient;
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
@@ -22,7 +27,8 @@ import static java.net.http.HttpResponse.BodyHandlers.ofString;
 public class CoreIdentityValidator {
 
     private final URI didKeyUri;
-    private final HashMap<String, ECKey> keyCache = new HashMap<>();
+    private final HashMap<String, ECKeyWithExpiry> keyCache = new HashMap<>();
+    private final Clock clock;
 
     public enum Result {
         VALID,
@@ -31,12 +37,17 @@ public class CoreIdentityValidator {
     }
 
     public static CoreIdentityValidator createValidator(RPConfig relyingPartyConfig) {
+        return createValidator(relyingPartyConfig, Clock.systemUTC());
+    }
+
+    public static CoreIdentityValidator createValidator(RPConfig relyingPartyConfig, Clock clock) {
         return Optional.ofNullable(relyingPartyConfig.identitySigningKeyUrl())
-                .map(CoreIdentityValidator::new)
+                .map(didKeyUrl -> new CoreIdentityValidator(didKeyUrl, clock))
                 .orElseGet(NoopCoreIdentityValidator::new);
     }
 
-    private CoreIdentityValidator(String didKeyUrl) {
+    private CoreIdentityValidator(String didKeyUrl, Clock clock) {
+        this.clock = clock;
         if (didKeyUrl != null) {
             this.didKeyUri = URI.create(didKeyUrl);
         } else {
@@ -66,17 +77,25 @@ public class CoreIdentityValidator {
     }
 
     private ECKey getKeyById(String kid) {
-        return keyCache.computeIfAbsent(kid, this::fetchKeyFromDid);
+        var keyFromCache = keyCache.get(kid);
+        if (keyFromCache != null && keyFromCache.expiry.isAfter(Instant.now(clock))) {
+            return keyFromCache.key;
+        }
+
+        var refreshedKey = fetchKeyFromDid(kid);
+        keyCache.put(kid, refreshedKey);
+        return refreshedKey.key;
     }
 
-    private ECKey fetchKeyFromDid(String kid) {
+    private ECKeyWithExpiry fetchKeyFromDid(String kid) {
         var kidParts = kid.split("#");
         var controller = kidParts[0];
-        var did = DIDDocument.fromJson(fetchDidDocument());
+        var didResponseWithLifetime = fetchDidDocument();
+        var did = DIDDocument.fromJson(didResponseWithLifetime.did);
         var verificationMethod = getVerificationMethod(did, kid);
         verifyController(controller, verificationMethod);
-
-        return getEcKeyFromVerificationMethod(verificationMethod);
+        var ecKey = getEcKeyFromVerificationMethod(verificationMethod);
+        return new ECKeyWithExpiry(ecKey, didResponseWithLifetime.expiry);
     }
 
     private static VerificationMethod getVerificationMethod(DIDDocument did, String keyId) {
@@ -117,7 +136,7 @@ public class CoreIdentityValidator {
         }
     }
 
-    private String fetchDidDocument() {
+    private DidResponseWithExpiry fetchDidDocument() {
         try {
             HttpRequest request = HttpRequest.newBuilder(didKeyUri).build();
             var response = newHttpClient().send(request, ofString());
@@ -128,7 +147,8 @@ public class CoreIdentityValidator {
                                 + " - "
                                 + response.body());
             }
-            return response.body();
+            var expiry = calculateExpiry(response);
+            return new DidResponseWithExpiry(response.body(), expiry);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
@@ -137,9 +157,31 @@ public class CoreIdentityValidator {
         }
     }
 
+    private Instant calculateExpiry(HttpResponse<String> response) {
+        Integer responseLifetime =
+                Optional.ofNullable(response.headers())
+                        .flatMap(httpHeaders -> httpHeaders.firstValue("cache-control"))
+                        .map(CoreIdentityValidator::lifetimeFromCacheControlHeader)
+                        .orElse(0);
+        return Instant.now(clock).plus(responseLifetime, ChronoUnit.SECONDS);
+    }
+
+    private static Integer lifetimeFromCacheControlHeader(String header) {
+        // This is a very simplistic parser that doesn't honour freshness or other expiry
+        var matcher = Pattern.compile("max-age=(\\d+)", Pattern.CASE_INSENSITIVE).matcher(header);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+        return 0;
+    }
+
+    private record DidResponseWithExpiry(String did, Instant expiry) {}
+
+    private record ECKeyWithExpiry(ECKey key, Instant expiry) {}
+
     static class NoopCoreIdentityValidator extends CoreIdentityValidator {
         private NoopCoreIdentityValidator() {
-            super(null);
+            super(null, null);
         }
 
         @Override
