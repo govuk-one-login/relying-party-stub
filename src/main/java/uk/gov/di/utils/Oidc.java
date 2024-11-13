@@ -189,7 +189,8 @@ public class Oidc {
             String language,
             String prompt,
             String rpSid,
-            String idToken) {
+            String idToken,
+            String maxAge) {
         LOG.info("Building JAR Authorize Request");
         JSONArray jsonArray = new JSONArray();
         jsonArray.add(vtr);
@@ -231,6 +232,10 @@ public class Oidc {
             requestObject.claim("id_token_hint", idToken);
         }
 
+        if (maxAge != null && !maxAge.isBlank()) {
+            requestObject.claim("max_age", maxAge);
+        }
+
         return new AuthenticationRequest.Builder(
                         ResponseType.CODE, Scope.parse(scopes), this.clientId, null)
                 .endpointURI(this.providerMetadata.getAuthorizationEndpointURI())
@@ -245,7 +250,8 @@ public class Oidc {
             ClaimsSetRequest claimsSetRequest,
             String language,
             String prompt,
-            String rpSid)
+            String rpSid,
+            String maxAge)
             throws URISyntaxException {
         LOG.info("Building Authorize Request");
         JSONArray jsonArray = new JSONArray();
@@ -286,6 +292,10 @@ public class Oidc {
 
         if (rpSid != null && !rpSid.isBlank()) {
             authorizationRequestBuilder.customParameter("rp_sid", rpSid);
+        }
+
+        if (maxAge != null && !maxAge.isBlank()) {
+            authorizationRequestBuilder.maxAge(Integer.parseInt(maxAge));
         }
 
         return authorizationRequestBuilder.build();
