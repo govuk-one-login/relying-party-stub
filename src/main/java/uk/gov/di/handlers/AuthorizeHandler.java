@@ -109,6 +109,8 @@ public class AuthorizeHandler implements Route {
 
             String idToken = formParameters.get("reauth-id-token");
 
+            String maxAge = formParameters.get("max-age");
+
             if (formParameters.containsKey("loc") && !formParameters.get("loc").isEmpty()) {
                 vtr = "%s.%s".formatted(formParameters.get("loc"), vtr);
                 LOG.info("VTR value selected: {}", vtr);
@@ -216,7 +218,8 @@ public class AuthorizeHandler implements Route {
                             language,
                             prompt,
                             rpSid,
-                            idToken);
+                            idToken,
+                            maxAge);
 
             if (formParameters.containsKey("method")
                     && formParameters.get("method").equals("post")) {
@@ -265,7 +268,8 @@ public class AuthorizeHandler implements Route {
             String language,
             String prompt,
             String rpSid,
-            String idToken)
+            String idToken,
+            String maxAge)
             throws URISyntaxException {
         if ("object".equals(formParameters.getOrDefault("request", "query"))) {
             LOG.info("Building authorize request with JAR");
@@ -277,7 +281,8 @@ public class AuthorizeHandler implements Route {
                     language,
                     prompt,
                     rpSid,
-                    idToken);
+                    idToken,
+                    maxAge);
         } else {
             LOG.info("Building authorize request with query params");
             return oidcClient.buildQueryParamAuthorizeRequest(
@@ -287,7 +292,8 @@ public class AuthorizeHandler implements Route {
                     claimsSetRequest,
                     language,
                     prompt,
-                    rpSid);
+                    rpSid,
+                    maxAge);
         }
     }
 }
