@@ -33,6 +33,7 @@ dependencies {
     constraints {
         implementation("org.eclipse.jetty:jetty-server:[10.0.23,11)")
         implementation("org.eclipse.jetty:jetty-webapp:[10.0.23,11)")
+        implementation("io.netty:netty-common:[4.1.115.Final,4.2)")
     }
 
     implementation(platform("software.amazon.awssdk:bom:2.28.19"))
