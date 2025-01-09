@@ -201,6 +201,8 @@ public class Oidc {
             throw new RuntimeException("Unable to parse prompt", e);
         }
 
+        var userInfoClaimsRequest =
+                new OIDCClaimsRequest().withUserInfoClaimsRequest(claimsSetRequest);
         var requestObject =
                 new JWTClaimsSet.Builder()
                         .audience(this.providerMetadata.getAuthorizationEndpointURI().toString())
@@ -211,7 +213,7 @@ public class Oidc {
                         .claim("client_id", this.clientId.getValue())
                         .claim("state", new State().getValue())
                         .claim("vtr", jsonArray)
-                        .claim("claims", claimsSetRequest.toJSONString())
+                        .claim("claims", userInfoClaimsRequest.toJSONString())
                         .claim("prompt", authRequestPrompt.toString())
                         .issuer(this.clientId.getValue());
 
