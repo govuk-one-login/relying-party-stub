@@ -235,7 +235,8 @@ public class Oidc {
         }
 
         if (maxAge != null && !maxAge.isBlank()) {
-            requestObject.claim("max_age", maxAge);
+            var maxAgeInt = Integer.parseInt(maxAge);
+            requestObject.claim("max_age", maxAgeInt);
         }
 
         return new AuthenticationRequest.Builder(
