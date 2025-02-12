@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Template to create the infrastructure for the Auth Relying Party stub.
+  Template to create the infrastructure for the Auth Relying Party stub 
 
 Transform:
   - AWS::Serverless-2016-10-31
