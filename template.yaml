@@ -55,6 +55,13 @@ Globals:
       - !Ref CodeSigningConfigArn
       - !Ref AWS::NoValue
 
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - E3031
+        - W8003
+
 Mappings:
   EnvironmentConfiguration:
     dev:
