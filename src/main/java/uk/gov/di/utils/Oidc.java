@@ -63,6 +63,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import static com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod.PLAIN;
+
 public class Oidc {
 
     private static final Logger LOG = LoggerFactory.getLogger(Oidc.class);
@@ -215,6 +217,7 @@ public class Oidc {
                         .claim("vtr", jsonArray)
                         .claim("claims", userInfoClaimsRequest.toJSONString())
                         .claim("prompt", authRequestPrompt.toString())
+                        .claim("code_challenge_method", PLAIN.getValue())
                         .issuer(this.clientId.getValue());
 
         if (!language.isBlank()) {
