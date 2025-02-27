@@ -206,6 +206,8 @@ public class AuthorizeHandler implements Route {
             if (formParameters.containsKey("pkce") && formParameters.get("pkce").equals("yes")) {
                 codeChallengeMethod = CodeChallengeMethod.S256;
                 codeVerifier = new CodeVerifier();
+
+                response.cookie("/", "codeVerifier", codeVerifier.getValue(), 3600, false, true);
             }
 
             var authRequest =

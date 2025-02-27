@@ -116,12 +116,16 @@ public class Oidc {
         return userInfoResponse.toSuccessResponse().getUserInfo();
     }
 
-    public OIDCTokens makeTokenRequest(String authCode, String authCallbackUrl)
+    public OIDCTokens makeTokenRequest(
+            String authCode, String authCallbackUrl, String codeVerifierValue)
             throws URISyntaxException {
         LOG.info("Making Token Request");
+
+        var codeVerifier = (codeVerifierValue != null) ? new CodeVerifier(codeVerifierValue) : null;
+
         var codeGrant =
                 new AuthorizationCodeGrant(
-                        new AuthorizationCode(authCode), new URI(authCallbackUrl));
+                        new AuthorizationCode(authCode), new URI(authCallbackUrl), codeVerifier);
 
         try {
             var clientAuthentication =

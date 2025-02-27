@@ -29,9 +29,17 @@ public class AuthCallbackHandler implements Route {
                 Configuration.getRelyingPartyConfig(request.cookie("relyingParty"));
         var oidcClient = new Oidc(relyingPartyConfig);
         var validator = CoreIdentityValidator.createValidator(relyingPartyConfig);
+
+        var codeVerifierValue = request.cookie("codeVerifier");
+        if (codeVerifierValue != null) {
+            response.removeCookie("/", "codeVerifier");
+        }
+
         var tokens =
                 oidcClient.makeTokenRequest(
-                        request.queryParams("code"), relyingPartyConfig.authCallbackUrl());
+                        request.queryParams("code"),
+                        relyingPartyConfig.authCallbackUrl(),
+                        codeVerifierValue);
         oidcClient.validateIdToken(tokens.getIDToken());
         response.cookie("/", "idToken", tokens.getIDToken().getParsedString(), 3600, false, true);
         var userInfo = oidcClient.makeUserInfoRequest(tokens.getAccessToken());
