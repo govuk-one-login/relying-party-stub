@@ -29,6 +29,9 @@ import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.id.Subject;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
+import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.Tokens;
@@ -61,6 +64,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class Oidc {
@@ -190,7 +194,10 @@ public class Oidc {
             String prompt,
             String rpSid,
             String idToken,
-            String maxAge) {
+            String maxAge,
+            CodeChallengeMethod codeChallengeMethod,
+            CodeVerifier codeVerifier)
+            throws RuntimeException {
         LOG.info("Building JAR Authorize Request");
         JSONArray jsonArray = new JSONArray();
         jsonArray.add(vtr);
@@ -238,6 +245,15 @@ public class Oidc {
             requestObject.claim("max_age", maxAge);
         }
 
+        if (Objects.nonNull(codeVerifier)) {
+            validateCodeChallengeMethodNotNull(codeChallengeMethod);
+
+            requestObject.claim("code_challenge_method", codeChallengeMethod.getValue());
+
+            var codeChallenge = CodeChallenge.compute(codeChallengeMethod, codeVerifier);
+            requestObject.claim("code_challenge", codeChallenge.getValue());
+        }
+
         return new AuthenticationRequest.Builder(
                         ResponseType.CODE, Scope.parse(scopes), this.clientId, null)
                 .endpointURI(this.providerMetadata.getAuthorizationEndpointURI())
@@ -253,8 +269,10 @@ public class Oidc {
             String language,
             String prompt,
             String rpSid,
-            String maxAge)
-            throws URISyntaxException {
+            String maxAge,
+            CodeChallengeMethod codeChallengeMethod,
+            CodeVerifier codeVerifier)
+            throws URISyntaxException, RuntimeException {
         LOG.info("Building Authorize Request");
         JSONArray jsonArray = new JSONArray();
         jsonArray.add(vtr);
@@ -276,6 +294,12 @@ public class Oidc {
                         .prompt(authRequestPrompt)
                         .endpointURI(this.providerMetadata.getAuthorizationEndpointURI())
                         .customParameter("vtr", jsonArray.toJSONString());
+
+        if (Objects.nonNull(codeVerifier)) {
+            validateCodeChallengeMethodNotNull(codeChallengeMethod);
+
+            authorizationRequestBuilder.codeChallenge(codeVerifier, codeChallengeMethod);
+        }
 
         if (claimsSetRequest.getEntries().size() > 0) {
             LOG.info("Adding claims to Authorize Request");
@@ -363,6 +387,14 @@ public class Oidc {
         } catch (BadJOSEException | JOSEException | MalformedURLException e) {
             LOG.error("Unexpected exception thrown when validating logout token", e);
             return Optional.empty();
+        }
+    }
+
+    private void validateCodeChallengeMethodNotNull(CodeChallengeMethod codeChallengeMethod)
+            throws RuntimeException {
+        if (Objects.isNull(codeChallengeMethod)) {
+            LOG.error("Code challenge method not set when code verifier has been provided.");
+            throw new RuntimeException("Code challenge method not set.");
         }
     }
 
