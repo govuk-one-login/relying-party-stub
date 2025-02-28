@@ -10,6 +10,8 @@ import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.oauth2.sdk.Scope;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
+import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.claims.ClaimRequirement;
 import com.nimbusds.openid.connect.sdk.claims.ClaimsSetRequest;
@@ -198,6 +200,16 @@ public class AuthorizeHandler implements Route {
                 }
             }
 
+            CodeChallengeMethod codeChallengeMethod = null;
+            CodeVerifier codeVerifier = null;
+
+            if (formParameters.containsKey("pkce") && formParameters.get("pkce").equals("yes")) {
+                codeChallengeMethod = CodeChallengeMethod.S256;
+                codeVerifier = new CodeVerifier();
+
+                response.cookie("/", "codeVerifier", codeVerifier.getValue(), 3600, false, true);
+            }
+
             var authRequest =
                     buildAuthorizeRequest(
                             relyingPartyConfig,
@@ -210,7 +222,9 @@ public class AuthorizeHandler implements Route {
                             prompt,
                             rpSid,
                             idToken,
-                            maxAge);
+                            maxAge,
+                            codeChallengeMethod,
+                            codeVerifier);
 
             if (formParameters.containsKey("method")
                     && formParameters.get("method").equals("post")) {
@@ -260,7 +274,9 @@ public class AuthorizeHandler implements Route {
             String prompt,
             String rpSid,
             String idToken,
-            String maxAge)
+            String maxAge,
+            CodeChallengeMethod codeChallengeMethod,
+            CodeVerifier codeVerifier)
             throws URISyntaxException {
         if ("object".equals(formParameters.getOrDefault("request", "query"))) {
             LOG.info("Building authorize request with JAR");
@@ -273,7 +289,9 @@ public class AuthorizeHandler implements Route {
                     prompt,
                     rpSid,
                     idToken,
-                    maxAge);
+                    maxAge,
+                    codeChallengeMethod,
+                    codeVerifier);
         } else {
             LOG.info("Building authorize request with query params");
             return oidcClient.buildQueryParamAuthorizeRequest(
@@ -284,7 +302,9 @@ public class AuthorizeHandler implements Route {
                     language,
                     prompt,
                     rpSid,
-                    maxAge);
+                    maxAge,
+                    codeChallengeMethod,
+                    codeVerifier);
         }
     }
 }

@@ -1,11 +1,15 @@
 package uk.gov.di.utils;
 
+import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
+import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
+import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.openid.connect.sdk.OIDCClaimsRequest;
 import com.nimbusds.openid.connect.sdk.claims.ClaimsSetRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.gov.di.config.RPConfig;
 
+import java.net.URISyntaxException;
 import java.security.KeyPair;
 import java.security.interfaces.RSAPrivateKey;
 import java.text.ParseException;
@@ -44,7 +48,8 @@ public class OidcTest {
     }
 
     @Test
-    void shouldCreateJARWithExpectedUserInfoClaims() throws ParseException {
+    void shouldCreateJARWithExpectedUserInfoClaimsWhenNoPkceAttributesProvided()
+            throws ParseException {
         var authorizeRequest =
                 oidc.buildJarAuthorizeRequest(
                         testCallbackUri,
@@ -55,12 +60,110 @@ public class OidcTest {
                         "login",
                         "",
                         "",
-                        "123");
+                        "123",
+                        null,
+                        null);
 
         var jarClaims = authorizeRequest.getRequestObject().getJWTClaimsSet();
         var expectedClaims = new OIDCClaimsRequest().withUserInfoClaimsRequest(testClaimSetRequest);
         assertEquals(expectedClaims.toJSONString(), jarClaims.getStringClaim("claims"));
         assertNull(jarClaims.getClaim("id_token_hint"));
         assertNull(jarClaims.getClaim("rp_sid"));
+
+        assertNull(jarClaims.getClaim("code_challenge"));
+        assertNull(jarClaims.getClaim("code_challenge_method"));
+    }
+
+    @Test
+    void shouldCreateJARWithExpectedUserInfoClaimsWhenPkceAttributesProvided()
+            throws ParseException {
+        var codeChallengeMethod = CodeChallengeMethod.S256;
+        var codeVerifier = new CodeVerifier();
+
+        var authorizeRequest =
+                oidc.buildJarAuthorizeRequest(
+                        testCallbackUri,
+                        testVtr,
+                        testScopes,
+                        testClaimSetRequest,
+                        "en",
+                        "login",
+                        "",
+                        "",
+                        "123",
+                        codeChallengeMethod,
+                        codeVerifier);
+
+        var jarClaims = authorizeRequest.getRequestObject().getJWTClaimsSet();
+        var expectedClaims = new OIDCClaimsRequest().withUserInfoClaimsRequest(testClaimSetRequest);
+        assertEquals(expectedClaims.toJSONString(), jarClaims.getStringClaim("claims"));
+        assertNull(jarClaims.getClaim("id_token_hint"));
+        assertNull(jarClaims.getClaim("rp_sid"));
+
+        var expectedCodeChallengeClaim =
+                CodeChallenge.compute(codeChallengeMethod, codeVerifier).getValue();
+
+        assertEquals(expectedCodeChallengeClaim, jarClaims.getClaim("code_challenge"));
+        assertEquals(codeChallengeMethod.getValue(), jarClaims.getClaim("code_challenge_method"));
+    }
+
+    @Test
+    void
+            shouldCreateQueryParamAuthorizeRequestWithExpectedUserInfoClaimsWhenNoPkceAttributesProvided()
+                    throws ParseException, URISyntaxException {
+        var authorizeRequest =
+                oidc.buildQueryParamAuthorizeRequest(
+                        testCallbackUri,
+                        testVtr,
+                        testScopes,
+                        testClaimSetRequest,
+                        "en",
+                        "login",
+                        "",
+                        "123",
+                        null,
+                        null);
+
+        var jarClaims = authorizeRequest.toJWTClaimsSet();
+        var expectedClaims = new OIDCClaimsRequest().withUserInfoClaimsRequest(testClaimSetRequest);
+        assertEquals(expectedClaims.toJSONString(), jarClaims.getStringClaim("claims"));
+        assertNull(jarClaims.getClaim("id_token_hint"));
+        assertNull(jarClaims.getClaim("rp_sid"));
+
+        assertNull(jarClaims.getClaim("code_challenge"));
+        assertNull(jarClaims.getClaim("code_challenge_method"));
+    }
+
+    @Test
+    void
+            shouldCreateQueryParamAuthorizeRequestWithExpectedUserInfoClaimsWhenPkceAttributesProvided()
+                    throws ParseException, URISyntaxException {
+        var codeChallengeMethod = CodeChallengeMethod.S256;
+        var codeVerifier = new CodeVerifier();
+
+        var authorizeRequest =
+                oidc.buildQueryParamAuthorizeRequest(
+                        testCallbackUri,
+                        testVtr,
+                        testScopes,
+                        testClaimSetRequest,
+                        "en",
+                        "login",
+                        "",
+                        "123",
+                        codeChallengeMethod,
+                        codeVerifier);
+
+        var jarClaims = authorizeRequest.toJWTClaimsSet();
+        var expectedClaims = new OIDCClaimsRequest().withUserInfoClaimsRequest(testClaimSetRequest);
+        assertEquals(expectedClaims.toJSONString(), jarClaims.getStringClaim("claims"));
+        assertNull(jarClaims.getClaim("id_token_hint"));
+        assertNull(jarClaims.getClaim("rp_sid"));
+
+        var expectedCodeChallengeClaim =
+                CodeChallenge.compute(codeChallengeMethod, codeVerifier).getValue();
+
+        assertEquals(expectedCodeChallengeClaim, jarClaims.getClaim("code_challenge"));
+        assertEquals(codeChallengeMethod.getValue(), jarClaims.getClaim("code_challenge_method"));
     }
 }
