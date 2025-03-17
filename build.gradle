@@ -36,7 +36,7 @@ dependencies {
         implementation("io.netty:netty-common:[4.1.115.Final,4.2)")
     }
 
-    implementation(platform("software.amazon.awssdk:bom:2.30.21"))
+    implementation(platform("software.amazon.awssdk:bom:2.31.1"))
     implementation "com.sparkjava:spark-core:2.9.4",
             "com.sparkjava:spark-template-mustache:2.7.1",
             "com.nimbusds:oauth2-oidc-sdk:11.20",
