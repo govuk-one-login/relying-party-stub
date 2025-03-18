@@ -17,7 +17,7 @@ Parameters:
     Type: String
     Description: >
       The ARN of the permissions boundary to apply to any role created by the template
-    Default: nonenonenonenonenonenone
+    Default: none
   CodeSigningConfigArn:
     Type: String
     Description: >
@@ -29,7 +29,7 @@ Conditions:
     Fn::Not:
       - Fn::Equals:
           - !Ref PermissionsBoundary
-          - nonenonenonenonenonenone
+          - none
   UseCodeSigning:
     Fn::Not:
       - Fn::Equals:
