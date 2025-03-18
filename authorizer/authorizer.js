@@ -14,7 +14,7 @@ const isIp4InCidr = ip => cidr => {
 const isIp4InCidrs = (ip, cidrs) => cidrs.some(isIp4InCidr(ip));
 
 exports.handler = async(event) => {
-    if (true) {
+    if (process.env.ENVIRONMENT === 'build') {
         return {
             'isAuthorized': true
         };
