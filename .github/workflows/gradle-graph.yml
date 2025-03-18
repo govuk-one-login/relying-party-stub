@@ -9,4 +9,4 @@ permissions:
 
 jobs:
   dependency-submission:
-    uses: govuk-one-login/.github/.github/workflows/gradle_graph_submission.yml@main
+    uses: govuk-one-login/.github/.github/workflows/gradle_graph_submission.yml@2f5df593c886f19f7c2c417aaf5da8bd5ccb2dcc # 2024/11/12
