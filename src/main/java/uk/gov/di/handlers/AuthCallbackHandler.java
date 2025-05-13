@@ -35,11 +35,19 @@ public class AuthCallbackHandler implements Route {
             response.removeCookie("/", "codeVerifier");
         }
 
+        boolean useIssuerAsJwtAud = false;
+        var jwtAudCookie = request.cookie("jwt-aud");
+        if (Objects.nonNull(jwtAudCookie) && jwtAudCookie.equals("iss")) {
+            useIssuerAsJwtAud = true;
+        }
+
         var tokens =
                 oidcClient.makeTokenRequest(
                         request.queryParams("code"),
                         relyingPartyConfig.authCallbackUrl(),
-                        codeVerifierValue);
+                        codeVerifierValue,
+                        useIssuerAsJwtAud);
+
         oidcClient.validateIdToken(tokens.getIDToken());
         response.cookie("/", "idToken", tokens.getIDToken().getParsedString(), 3600, false, true);
         var userInfo = oidcClient.makeUserInfoRequest(tokens.getAccessToken());

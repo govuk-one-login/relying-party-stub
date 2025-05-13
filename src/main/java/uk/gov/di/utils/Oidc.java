@@ -117,7 +117,10 @@ public class Oidc {
     }
 
     public OIDCTokens makeTokenRequest(
-            String authCode, String authCallbackUrl, String codeVerifierValue)
+            String authCode,
+            String authCallbackUrl,
+            String codeVerifierValue,
+            boolean useIssuerAsJwtAud)
             throws URISyntaxException {
         LOG.info("Making Token Request");
 
@@ -131,7 +134,7 @@ public class Oidc {
             var clientAuthentication =
                     Optional.ofNullable(relyingPartyConfig.tokenClientSecret())
                             .map(this::clientSecretPost)
-                            .orElseGet(this::privateKeyJwt);
+                            .orElseGet(() -> privateKeyJwt(useIssuerAsJwtAud));
 
             var request =
                     new TokenRequest(
@@ -173,18 +176,24 @@ public class Oidc {
         return new ClientSecretPost(new ClientID(this.clientId), new Secret(secret));
     }
 
-    private ClientAuthentication privateKeyJwt() {
+    private ClientAuthentication privateKeyJwt(boolean useIssuerAsJwtAud) {
         var localDateTime = LocalDateTime.now().plusMinutes(5);
         var expiryDate = Date.from(localDateTime.atZone(ZoneId.of("UTC")).toInstant());
 
+        LOG.info("Using Issuer as private_key_jwt audience: {}", useIssuerAsJwtAud);
         var claims =
                 new JWTClaimsSet.Builder()
                         .subject(this.clientId.getValue())
                         .issuer(this.clientId.getValue())
-                        .audience(this.providerMetadata.getTokenEndpointURI().toString())
+                        .audience(
+                                useIssuerAsJwtAud
+                                        ? this.providerMetadata.getIssuer().toString()
+                                        : this.providerMetadata.getTokenEndpointURI().toString())
                         .expirationTime(expiryDate)
                         .claim("client_id", this.clientId)
                         .build();
+
+        LOG.info("private_key_jwt audience value: {}", claims.getAudience());
 
         return new PrivateKeyJWT(signJwtWithClaims(claims));
     }
