@@ -62,6 +62,7 @@ public class OidcTest {
                         "",
                         "123",
                         null,
+                        null,
                         null);
 
         var jarClaims = authorizeRequest.getRequestObject().getJWTClaimsSet();
@@ -92,7 +93,8 @@ public class OidcTest {
                         "",
                         "123",
                         codeChallengeMethod,
-                        codeVerifier);
+                        codeVerifier,
+                        null);
 
         var jarClaims = authorizeRequest.getRequestObject().getJWTClaimsSet();
         var expectedClaims = new OIDCClaimsRequest().withUserInfoClaimsRequest(testClaimSetRequest);

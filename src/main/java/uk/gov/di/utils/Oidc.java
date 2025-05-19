@@ -200,7 +200,8 @@ public class Oidc {
             String idToken,
             String maxAge,
             CodeChallengeMethod codeChallengeMethod,
-            CodeVerifier codeVerifier)
+            CodeVerifier codeVerifier,
+            String loginHint)
             throws RuntimeException {
         LOG.info("Building JAR Authorize Request");
         JSONArray jsonArray = new JSONArray();
@@ -256,6 +257,10 @@ public class Oidc {
 
             var codeChallenge = CodeChallenge.compute(codeChallengeMethod, codeVerifier);
             requestObject.claim("code_challenge", codeChallenge.getValue());
+        }
+
+        if (loginHint != null && !loginHint.isBlank()) {
+            requestObject.claim("login_hint", loginHint);
         }
 
         return new AuthenticationRequest.Builder(
