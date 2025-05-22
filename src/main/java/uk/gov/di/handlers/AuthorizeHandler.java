@@ -210,6 +210,13 @@ public class AuthorizeHandler implements Route {
                 response.cookie("/", "codeVerifier", codeVerifier.getValue(), 3600, false, true);
             }
 
+            String loginHint = null;
+
+            if (formParameters.containsKey("login-hint")
+                    && "object".equals(formParameters.getOrDefault("request", "query"))) {
+                loginHint = formParameters.get("login-hint");
+            }
+
             var authRequest =
                     buildAuthorizeRequest(
                             relyingPartyConfig,
@@ -224,7 +231,8 @@ public class AuthorizeHandler implements Route {
                             idToken,
                             maxAge,
                             codeChallengeMethod,
-                            codeVerifier);
+                            codeVerifier,
+                            loginHint);
 
             if (formParameters.containsKey("method")
                     && formParameters.get("method").equals("post")) {
@@ -276,7 +284,8 @@ public class AuthorizeHandler implements Route {
             String idToken,
             String maxAge,
             CodeChallengeMethod codeChallengeMethod,
-            CodeVerifier codeVerifier)
+            CodeVerifier codeVerifier,
+            String loginHint)
             throws URISyntaxException {
         if ("object".equals(formParameters.getOrDefault("request", "query"))) {
             LOG.info("Building authorize request with JAR");
@@ -291,7 +300,8 @@ public class AuthorizeHandler implements Route {
                     idToken,
                     maxAge,
                     codeChallengeMethod,
-                    codeVerifier);
+                    codeVerifier,
+                    loginHint);
         } else {
             LOG.info("Building authorize request with query params");
             return oidcClient.buildQueryParamAuthorizeRequest(
