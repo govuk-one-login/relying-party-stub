@@ -201,7 +201,8 @@ public class Oidc {
             String maxAge,
             CodeChallengeMethod codeChallengeMethod,
             CodeVerifier codeVerifier,
-            String loginHint)
+            String loginHint,
+            String channel)
             throws RuntimeException {
         LOG.info("Building JAR Authorize Request");
         JSONArray jsonArray = new JSONArray();
@@ -263,6 +264,10 @@ public class Oidc {
             requestObject.claim("login_hint", loginHint);
         }
 
+        if (channel != null) {
+            requestObject.claim("channel", channel);
+        }
+
         return new AuthenticationRequest.Builder(
                         ResponseType.CODE, Scope.parse(scopes), this.clientId, null)
                 .endpointURI(this.providerMetadata.getAuthorizationEndpointURI())
@@ -280,7 +285,8 @@ public class Oidc {
             String rpSid,
             String maxAge,
             CodeChallengeMethod codeChallengeMethod,
-            CodeVerifier codeVerifier)
+            CodeVerifier codeVerifier,
+            String channel)
             throws URISyntaxException, RuntimeException {
         LOG.info("Building Authorize Request");
         JSONArray jsonArray = new JSONArray();
@@ -331,6 +337,10 @@ public class Oidc {
 
         if (maxAge != null && !maxAge.isBlank()) {
             authorizationRequestBuilder.maxAge(Integer.parseInt(maxAge));
+        }
+
+        if (channel != null) {
+            authorizationRequestBuilder.customParameter("channel", channel);
         }
 
         return authorizationRequestBuilder.build();
