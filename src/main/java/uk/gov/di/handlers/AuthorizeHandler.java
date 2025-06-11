@@ -41,6 +41,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -217,6 +218,12 @@ public class AuthorizeHandler implements Route {
                 loginHint = formParameters.get("login-hint");
             }
 
+            String channel = null;
+
+            if (!Objects.equals(formParameters.get("channel"), "none")) {
+                channel = formParameters.get("channel");
+            }
+
             var authRequest =
                     buildAuthorizeRequest(
                             relyingPartyConfig,
@@ -232,7 +239,8 @@ public class AuthorizeHandler implements Route {
                             maxAge,
                             codeChallengeMethod,
                             codeVerifier,
-                            loginHint);
+                            loginHint,
+                            channel);
 
             if (formParameters.containsKey("method")
                     && formParameters.get("method").equals("post")) {
@@ -285,7 +293,8 @@ public class AuthorizeHandler implements Route {
             String maxAge,
             CodeChallengeMethod codeChallengeMethod,
             CodeVerifier codeVerifier,
-            String loginHint)
+            String loginHint,
+            String channel)
             throws URISyntaxException {
         if ("object".equals(formParameters.getOrDefault("request", "query"))) {
             LOG.info("Building authorize request with JAR");
@@ -301,7 +310,8 @@ public class AuthorizeHandler implements Route {
                     maxAge,
                     codeChallengeMethod,
                     codeVerifier,
-                    loginHint);
+                    loginHint,
+                    channel);
         } else {
             LOG.info("Building authorize request with query params");
             return oidcClient.buildQueryParamAuthorizeRequest(
@@ -314,7 +324,8 @@ public class AuthorizeHandler implements Route {
                     rpSid,
                     maxAge,
                     codeChallengeMethod,
-                    codeVerifier);
+                    codeVerifier,
+                    channel);
         }
     }
 }

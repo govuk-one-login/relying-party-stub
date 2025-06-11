@@ -63,7 +63,8 @@ public class OidcTest {
                         "123",
                         null,
                         null,
-                        null);
+                        null,
+                        "web");
 
         var jarClaims = authorizeRequest.getRequestObject().getJWTClaimsSet();
         var expectedClaims = new OIDCClaimsRequest().withUserInfoClaimsRequest(testClaimSetRequest);
@@ -94,7 +95,8 @@ public class OidcTest {
                         "123",
                         codeChallengeMethod,
                         codeVerifier,
-                        null);
+                        null,
+                        "web");
 
         var jarClaims = authorizeRequest.getRequestObject().getJWTClaimsSet();
         var expectedClaims = new OIDCClaimsRequest().withUserInfoClaimsRequest(testClaimSetRequest);
@@ -124,7 +126,8 @@ public class OidcTest {
                         "",
                         "123",
                         null,
-                        null);
+                        null,
+                        "web");
 
         var jarClaims = authorizeRequest.toJWTClaimsSet();
         var expectedClaims = new OIDCClaimsRequest().withUserInfoClaimsRequest(testClaimSetRequest);
@@ -154,7 +157,8 @@ public class OidcTest {
                         "",
                         "123",
                         codeChallengeMethod,
-                        codeVerifier);
+                        codeVerifier,
+                        "web");
 
         var jarClaims = authorizeRequest.toJWTClaimsSet();
         var expectedClaims = new OIDCClaimsRequest().withUserInfoClaimsRequest(testClaimSetRequest);
