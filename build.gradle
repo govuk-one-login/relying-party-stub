@@ -39,7 +39,7 @@ dependencies {
     implementation(platform("software.amazon.awssdk:bom:2.30.21"))
     implementation "com.sparkjava:spark-core:2.9.4",
             "com.sparkjava:spark-template-mustache:2.7.1",
-            "com.nimbusds:oauth2-oidc-sdk:11.20",
+            "com.nimbusds:oauth2-oidc-sdk:11.26",
             "org.apache.logging.log4j:log4j-api:${dependencyVersions.log4j}",
             "org.apache.logging.log4j:log4j-core:${dependencyVersions.log4j}",
             "org.apache.logging.log4j:log4j-slf4j2-impl:${dependencyVersions.log4j}",
