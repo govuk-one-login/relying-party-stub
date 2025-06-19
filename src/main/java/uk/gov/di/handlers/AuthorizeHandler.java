@@ -25,7 +25,6 @@ import spark.Route;
 import uk.gov.di.config.Configuration;
 import uk.gov.di.config.RPConfig;
 import uk.gov.di.utils.Oidc;
-import uk.gov.di.utils.ViewHelper;
 
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -38,7 +37,6 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -241,21 +239,6 @@ public class AuthorizeHandler implements Route {
                             codeVerifier,
                             loginHint,
                             channel);
-
-            if (formParameters.containsKey("method")
-                    && formParameters.get("method").equals("post")) {
-                var model = new HashMap<>();
-                model.put("servicename", relyingPartyConfig.serviceName());
-                model.put("endpoint_address", oidcClient.getAuthorizationEndpoint());
-                authRequest
-                        .toParameters()
-                        .forEach(
-                                (key, value) ->
-                                        model.putIfAbsent(
-                                                key,
-                                                value.stream().count() > 1 ? value : value.get(0)));
-                return ViewHelper.render(model, "post-page.mustache");
-            }
 
             LOG.info("Redirecting to OP");
             response.redirect(authRequest.toURI().toString());
