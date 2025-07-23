@@ -6,6 +6,7 @@ import spark.Request;
 import spark.Response;
 import spark.Route;
 import uk.gov.di.config.Configuration;
+import uk.gov.di.config.RPConfig;
 import uk.gov.di.utils.CoreIdentityValidator;
 import uk.gov.di.utils.Oidc;
 import uk.gov.di.utils.ViewHelper;
@@ -13,6 +14,7 @@ import uk.gov.di.utils.ViewHelper;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class AuthCallbackHandler implements Route {
 
@@ -49,6 +51,7 @@ public class AuthCallbackHandler implements Route {
         model.put("access_token", tokens.getAccessToken().toJSONString());
         model.put("user_info_response", userInfo.toJSONString());
         model.put("journey_id", tokens.getIDToken().getJWTClaimsSet().getStringClaim("sid"));
+        model.put("client_name", relyingPartyConfig.serviceName());
 
         var templateName = "userinfo.mustache";
         if (relyingPartyConfig.clientType().equals("app")) {
@@ -97,9 +100,23 @@ public class AuthCallbackHandler implements Route {
 
     private static Object renderError(Request request) {
         LOG.error("Error response in callback");
+        Optional<RPConfig> rpConfigOptional = Optional.empty();
+        try {
+            rpConfigOptional =
+                    Optional.of(
+                            Configuration.getRelyingPartyConfig(request.cookie("relyingParty")));
+        } catch (Exception e) {
+            LOG.warn("Failed to get config for callback error, ignoring: {}", e.getMessage());
+        }
+
         var model = new HashMap<>();
         model.put("error", request.queryParams("error"));
         model.put("error_description", request.queryParams("error_description"));
+
+        rpConfigOptional.ifPresent(
+                c -> {
+                    model.put("client_name", c.serviceName());
+                });
         return ViewHelper.render(model, "callback-error.mustache");
     }
 }
