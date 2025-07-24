@@ -135,6 +135,13 @@ public class AuthorizeHandler implements Route {
                 LOG.info("VTR value selected: {}", vtrToAdd);
             }
 
+            if (formParameters.containsKey("loc-P3")) {
+                var vtrToAdd =
+                        "%s.%s".formatted(formParameters.get("loc-P3"), secondFactorAuthentication);
+                vtr.add(vtrToAdd);
+                LOG.info("VTR value selected: {}", vtrToAdd);
+            }
+
             if (vtr.isEmpty()) {
                 vtr.add(secondFactorAuthentication);
             }
