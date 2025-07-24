@@ -191,7 +191,7 @@ public class Oidc {
 
     public AuthenticationRequest buildJarAuthorizeRequest(
             String callbackUrl,
-            String vtr,
+            List<String> vtr,
             List<String> scopes,
             ClaimsSetRequest claimsSetRequest,
             String language,
@@ -205,8 +205,6 @@ public class Oidc {
             String channel)
             throws RuntimeException {
         LOG.info("Building JAR Authorize Request");
-        JSONArray jsonArray = new JSONArray();
-        jsonArray.add(vtr);
         Prompt authRequestPrompt;
         try {
             authRequestPrompt = Prompt.parse(prompt);
@@ -225,7 +223,7 @@ public class Oidc {
                         .claim("nonce", new Nonce().getValue())
                         .claim("client_id", this.clientId.getValue())
                         .claim("state", new State().getValue())
-                        .claim("vtr", jsonArray)
+                        .claim("vtr", vtr)
                         .claim("claims", userInfoClaimsRequest.toJSONString())
                         .claim("prompt", authRequestPrompt.toString())
                         .issuer(this.clientId.getValue());
@@ -277,7 +275,7 @@ public class Oidc {
 
     public AuthenticationRequest buildQueryParamAuthorizeRequest(
             String callbackUrl,
-            String vtr,
+            List<String> vtr,
             List<String> scopes,
             ClaimsSetRequest claimsSetRequest,
             String language,
@@ -289,8 +287,6 @@ public class Oidc {
             String channel)
             throws URISyntaxException, RuntimeException {
         LOG.info("Building Authorize Request");
-        JSONArray jsonArray = new JSONArray();
-        jsonArray.add(vtr);
         Prompt authRequestPrompt;
         try {
             authRequestPrompt = Prompt.parse(prompt);
@@ -308,7 +304,7 @@ public class Oidc {
                         .nonce(new Nonce())
                         .prompt(authRequestPrompt)
                         .endpointURI(this.providerMetadata.getAuthorizationEndpointURI())
-                        .customParameter("vtr", jsonArray.toJSONString());
+                        .customParameter("vtr", JSONArray.toJSONString(vtr));
 
         if (Objects.nonNull(codeVerifier)) {
             validateCodeChallengeMethodNotNull(codeChallengeMethod);

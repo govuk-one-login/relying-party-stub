@@ -35,7 +35,7 @@ public class OidcTest {
             Base64.getMimeEncoder().encodeToString(testPrivateKey.getEncoded());
     private final String testClientId = "aClient";
     private final String testCallbackUri = "https://example.com/authentication-callback";
-    private final String testVtr = "[\"Cl.Cm\"]";
+    private final List<String> testVtr = List.of("Cl.Cm");
     private final List<String> testScopes = List.of("openid", "phone");
     private final ClaimsSetRequest testClaimSetRequest =
             new ClaimsSetRequest()
