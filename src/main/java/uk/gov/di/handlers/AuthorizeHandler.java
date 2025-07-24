@@ -102,7 +102,7 @@ public class AuthorizeHandler implements Route {
                 scopes.add(formParameters.get("scopes-account-management"));
             }
 
-            String vtr = formParameters.get("2fa");
+            String secondFactorAuthentication = formParameters.get("2fa");
 
             var prompt = formParameters.get("prompt");
 
@@ -112,9 +112,31 @@ public class AuthorizeHandler implements Route {
 
             String maxAge = formParameters.get("max-age");
 
-            if (formParameters.containsKey("loc") && !formParameters.get("loc").isEmpty()) {
-                vtr = "%s.%s".formatted(formParameters.get("loc"), vtr);
-                LOG.info("VTR value selected: {}", vtr);
+            List<String> vtr = new ArrayList<>();
+
+            if (formParameters.containsKey("loc-P0")) {
+                var vtrToAdd =
+                        "%s.%s".formatted(formParameters.get("loc-P0"), secondFactorAuthentication);
+                vtr.add(vtrToAdd);
+                LOG.info("VTR value selected: {}", vtrToAdd);
+            }
+
+            if (formParameters.containsKey("loc-P1")) {
+                var vtrToAdd =
+                        "%s.%s".formatted(formParameters.get("loc-P1"), secondFactorAuthentication);
+                vtr.add(vtrToAdd);
+                LOG.info("VTR value selected: {}", vtrToAdd);
+            }
+
+            if (formParameters.containsKey("loc-P2")) {
+                var vtrToAdd =
+                        "%s.%s".formatted(formParameters.get("loc-P2"), secondFactorAuthentication);
+                vtr.add(vtrToAdd);
+                LOG.info("VTR value selected: {}", vtrToAdd);
+            }
+
+            if (vtr.isEmpty()) {
+                vtr.add(secondFactorAuthentication);
             }
 
             var claimsSetRequest = new ClaimsSetRequest();
@@ -266,7 +288,7 @@ public class AuthorizeHandler implements Route {
             RPConfig relyingPartyConfig,
             Oidc oidcClient,
             Map<String, String> formParameters,
-            String vtr,
+            List<String> vtr,
             List<String> scopes,
             ClaimsSetRequest claimsSetRequest,
             String language,
