@@ -238,6 +238,11 @@ public class AuthorizeHandler implements Route {
                 response.cookie("/", "codeVerifier", codeVerifier.getValue(), 3600, false, true);
             }
 
+            if (formParameters.containsKey("jwt-aud")
+                    && formParameters.get("jwt-aud").equals("issuer")) {
+                response.cookie("/", "jwt-aud", "iss", 3600, false, true);
+            }
+
             String loginHint = null;
 
             if (formParameters.containsKey("login-hint")
