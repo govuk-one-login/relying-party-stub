@@ -196,6 +196,32 @@
                             {{access_token}}
                         </dd>
                     </div>
+                    {{#refresh_token}}
+                      <div class="govuk-summary-list__row">
+                          <dt class="govuk-summary-list__key">
+                              Refresh Token
+                          </dt>
+                          <dd class="govuk-summary-list__value" id="user-info-refresh-token">
+                              {{refresh_token}}
+                          </dd>
+                      </div>
+                      <div class="govuk-summary-list__row">
+                          <dt class="govuk-summary-list__key">
+                              Client assertion JWT
+                          </dt>
+                          <dd class="govuk-summary-list__value" id="user-info-client-assertion">
+                              {{client_assertion}}
+                          </dd>
+                      </div>
+                      <div class="govuk-summary-list__row">
+                          <dt class="govuk-summary-list__key">
+                              Auth Code
+                          </dt>
+                          <dd class="govuk-summary-list__value" id="user-info-auth-code">
+                              {{auth_code}}
+                          </dd>
+                      </div>
+                    {{/refresh_token}}
                     <div class="govuk-summary-list__row">
                         <dt class="govuk-summary-list__key">
                             User Info response
