@@ -102,6 +102,11 @@ public class AuthorizeHandler implements Route {
                 scopes.add(formParameters.get("scopes-account-management"));
             }
 
+            if (formParameters.containsKey("scopes-offline_access")) {
+                LOG.info("offline_access scope requested");
+                scopes.add(formParameters.get("scopes-offline_access"));
+            }
+
             String secondFactorAuthentication = formParameters.get("2fa");
 
             var prompt = formParameters.get("prompt");

@@ -36,12 +36,10 @@ public class AuthCallbackHandler implements Route {
         if (codeVerifierValue != null) {
             response.removeCookie("/", "codeVerifier");
         }
-
+        var authCode = request.queryParams("code");
         var tokens =
                 oidcClient.makeTokenRequest(
-                        request.queryParams("code"),
-                        relyingPartyConfig.authCallbackUrl(),
-                        codeVerifierValue);
+                        authCode, relyingPartyConfig.authCallbackUrl(), codeVerifierValue);
         oidcClient.validateIdToken(tokens.getIDToken());
         response.cookie("/", "idToken", tokens.getIDToken().getParsedString(), 3600, false, true);
         var userInfo = oidcClient.makeUserInfoRequest(tokens.getAccessToken());
@@ -49,6 +47,11 @@ public class AuthCallbackHandler implements Route {
         var model = new HashMap<>();
         model.put("id_token", tokens.getIDToken().getParsedString());
         model.put("access_token", tokens.getAccessToken().toJSONString());
+        if (tokens.getRefreshToken() != null) {
+            model.put("refresh_token", tokens.getRefreshToken());
+            model.put("client_assertion", oidcClient.buildClientAssertionJwt());
+            model.put("auth_code", authCode);
+        }
         model.put("user_info_response", userInfo.toJSONString());
         model.put("journey_id", tokens.getIDToken().getJWTClaimsSet().getStringClaim("sid"));
         model.put("client_name", relyingPartyConfig.serviceName());

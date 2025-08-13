@@ -60,8 +60,10 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -367,6 +369,18 @@ public class Oidc {
         logoutUri.addParameter("post_logout_redirect_uri", postLogoutRedirectUri);
 
         return logoutUri.build().toString();
+    }
+
+    public String buildClientAssertionJwt() {
+        var claims =
+                new JWTClaimsSet.Builder()
+                        .audience(this.idpUrl)
+                        .issuer(this.clientId.getValue())
+                        .jwtID("RANDOM_VALUE_JTI")
+                        .subject(this.clientId.getValue())
+                        .expirationTime(Date.from(Instant.now().plus(2, ChronoUnit.HOURS)))
+                        .build();
+        return signJwtWithClaims(claims).serialize();
     }
 
     public void validateIdToken(JWT idToken) throws MalformedURLException {
