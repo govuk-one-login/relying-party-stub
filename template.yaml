@@ -65,9 +65,9 @@ Metadata:
 Mappings:
   EnvironmentConfiguration:
     dev:
-      defaultClientId: fvWopxEECoAhdU7uTYqtF28gueApgiow
+      defaultClientId: 1Dlz5rYheTqzZASRMmSBtgFIYgZlysnQ
       stubUrl: https://rp-dev.build.stubs.account.gov.uk
-      docappDefaultClientId: VYx7mufwei8cLZ2FUKQY3cdNLYponNtz
+      docappDefaultClientId: nLGqdxViV4guZ0ky61Dxr4ERFHYgxsp8
       docAppStubUrl: https://doc-app-rp-dev.build.stubs.account.gov.uk
     build:
       defaultClientId: P5OQvWV21U0OW7U5g27d6MU2LLznYYaM
