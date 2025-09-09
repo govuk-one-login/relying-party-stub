@@ -35,8 +35,8 @@ dependencies {
         implementation("org.eclipse.jetty:jetty-webapp:[10.0.23,11)")
         implementation("io.netty:netty-common:[4.1.115.Final,4.2)")
         implementation('io.netty:netty-codec-http2') {
-            version { strictly '[4.1.124.Final,4.2.0)' }
-            because 'CVE-2025-55163 is fixed in io.netty:netty-codec-http2:4.1.124.Final and higher'
+            version { strictly '[4.1.125.Final,4.2.0)' }
+            because 'CVE-2025-58056 and CVE-2025-58057 ars fixed in io.netty:netty-codec-http2:4.1.125.Final and higher'
         }
     }
 
