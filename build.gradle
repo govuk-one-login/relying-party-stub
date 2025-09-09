@@ -52,7 +52,7 @@ dependencies {
             "com.google.code.gson:gson:2.13.1",
             "software.amazon.awssdk:secretsmanager",
             'com.fasterxml.jackson.core:jackson-databind:2.19.2',
-            "com.nimbusds:nimbus-jose-jwt:10.4"
+            "com.nimbusds:nimbus-jose-jwt:10.5"
     implementation("decentralized-identity:did-common-java:1.18.0")
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4',
             'org.mockito:mockito-inline:5.2.0'
