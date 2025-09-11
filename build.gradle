@@ -49,7 +49,7 @@ dependencies {
             "org.apache.logging.log4j:log4j-slf4j2-impl:${dependencyVersions.log4j}",
             "org.apache.httpcomponents:httpclient:4.5.14",
             'net.minidev:json-smart:2.5.2',
-            "com.google.code.gson:gson:2.13.1",
+            "com.google.code.gson:gson:2.13.2",
             "software.amazon.awssdk:secretsmanager",
             'com.fasterxml.jackson.core:jackson-databind:2.19.2',
             "com.nimbusds:nimbus-jose-jwt:10.4"
