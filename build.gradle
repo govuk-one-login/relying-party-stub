@@ -6,6 +6,14 @@ buildscript {
             url 'https://repo.danubetech.com/repository/maven-public/'
         }
     }
+    // Constraints on transitive dependencies of plugins
+    dependencies {
+        constraints {
+            classpath('org.bouncycastle:bcprov-jdk18on:[1.84,)') {
+                because 'CVE-2026-5598 is fixed in org.bouncycastle:bcprov-jdk18on:1.84 and higher'
+            }
+        }
+    }
 }
 
 plugins {
@@ -34,6 +42,7 @@ ext {
 }
 
 dependencies {
+    // Constraints on transitive dependencies of dependencies
     constraints {
         implementation("org.eclipse.jetty:jetty-server:[10.0.23,11)")
         implementation("org.eclipse.jetty:jetty-webapp:[10.0.23,11)")
