@@ -25,9 +25,11 @@ import static spark.Spark.staticFileLocation;
 import static uk.gov.di.config.Configuration.getClientsPublicKeys;
 
 public class OidcRp {
+    private static final int DEFAULT_PORT = 8080;
+
     public OidcRp() {
         staticFileLocation("/public");
-        port(8080);
+        port(getPort());
 
         initRoutes();
     }
@@ -74,5 +76,10 @@ public class OidcRp {
         internalServerError(internalServerErrorHandler);
 
         after("/*", (req, res) -> ResponseHeaderHelper.setHeaders(res));
+    }
+
+    private int getPort() {
+        var envPort = System.getenv("PORT");
+        return envPort == null ? DEFAULT_PORT : Integer.parseInt(envPort);
     }
 }

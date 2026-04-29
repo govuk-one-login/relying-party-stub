@@ -74,15 +74,13 @@ public class Oidc {
 
     private final OIDCProviderMetadata providerMetadata;
     private final Optional<OIDCProviderMetadata> alternativeProviderMetadata;
-    private final String idpUrl;
     private final ClientID clientId;
     private final PrivateKeyReader privateKeyReader;
 
     public Oidc(RPConfig relyingPartyConfig) {
         this.relyingPartyConfig = relyingPartyConfig;
-        this.idpUrl = relyingPartyConfig.opBaseUrl();
         this.clientId = new ClientID(relyingPartyConfig.clientId());
-        this.providerMetadata = loadProviderMetadata(idpUrl);
+        this.providerMetadata = loadProviderMetadata(relyingPartyConfig.opBaseUrl());
         this.alternativeProviderMetadata =
                 Optional.ofNullable(relyingPartyConfig.alternativeBaseUrl())
                         .map(this::loadProviderMetadata);
@@ -366,10 +364,15 @@ public class Oidc {
         return authRequestBuilder.build().toURI().toString();
     }
 
-    public String buildLogoutUrl(String idToken, String state, String postLogoutRedirectUri)
+    public String buildLogoutUrl(
+            String idToken,
+            String state,
+            String postLogoutRedirectUri,
+            boolean useAlternativeDomain)
             throws URISyntaxException {
         var logoutUri =
-                new URIBuilder(this.idpUrl + (this.idpUrl.endsWith("/") ? "logout" : "/logout"));
+                new URIBuilder(
+                        getProviderMetadata(useAlternativeDomain).getEndSessionEndpointURI());
         logoutUri.addParameter("id_token_hint", idToken);
         logoutUri.addParameter("state", state);
         logoutUri.addParameter("post_logout_redirect_uri", postLogoutRedirectUri);

@@ -1,4 +1,4 @@
-FROM node:lts AS scripts
+FROM node:22.20.0-alpine@sha256:cb3143549582cc5f74f26f0992cdef4a422b22128cb517f94173a5f910fa4ee7 AS scripts
 
 COPY scripts .
 RUN npm install --ignore-scripts
@@ -15,7 +15,7 @@ COPY --chown=gradle:gradle src src
 COPY --from=scripts /node_modules/jquery/dist/jquery.min.js src/main/resources/public/jquery.js
 RUN gradle clean build installDist --no-daemon
 
-FROM amazoncorretto:22.0.2-alpine3.17 AS runtime
+FROM amazoncorretto:21.0.10-alpine3.23@sha256:29fb96b59042d9637e3d51ff3b423be3a88f17f530cbfb767a91d4199457f395 AS runtime
 WORKDIR /home
 COPY --from=build /home/gradle/src/build/install/src .
 
