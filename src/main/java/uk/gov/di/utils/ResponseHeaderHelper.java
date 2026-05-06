@@ -1,17 +1,17 @@
 package uk.gov.di.utils;
 
-import spark.Response;
+import io.javalin.http.Context;
 
 public class ResponseHeaderHelper {
     private ResponseHeaderHelper() {
         throw new IllegalStateException("Utility Class");
     }
 
-    public static void setHeaders(Response response) {
-        response.header("Server", "govuk-sign-in-stub-rp");
-        response.header("Content-Security-Policy", "default-src 'self'");
-        response.header("X-Frame-Options", "DENY");
-        response.header("X-XSS-Protection", "0");
-        response.header("X-Content-Type-Options", "nosniff");
+    public static void setHeaders(Context ctx) {
+        ctx.header("Server", "govuk-sign-in-stub-rp");
+        ctx.header("Content-Security-Policy", "default-src 'self'");
+        ctx.header("X-Frame-Options", "DENY");
+        ctx.header("X-XSS-Protection", "0");
+        ctx.header("X-Content-Type-Options", "nosniff");
     }
 }

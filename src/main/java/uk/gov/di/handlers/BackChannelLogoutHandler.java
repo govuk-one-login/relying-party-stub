@@ -2,13 +2,11 @@ package uk.gov.di.handlers;
 
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.openid.connect.sdk.claims.ClaimsSet;
+import io.javalin.http.Context;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.Request;
-import spark.Response;
-import spark.Route;
 import uk.gov.di.config.Configuration;
 import uk.gov.di.utils.Oidc;
 
@@ -17,21 +15,19 @@ import java.text.ParseException;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.stream.Collectors.toMap;
 
-public class BackChannelLogoutHandler implements Route {
+public class BackChannelLogoutHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(BackChannelLogoutHandler.class);
 
-    @Override
-    public Object handle(Request request, Response response) {
+    public void handle(Context ctx) {
         LOG.info("Request received in BackChannelLogoutHandler");
-        var relyingPartyConfig =
-                Configuration.getRelyingPartyConfig(request.cookie("relyingParty"));
+        var relyingPartyConfig = Configuration.getRelyingPartyConfig(ctx.cookie("relyingParty"));
         var oidcClient = new Oidc(relyingPartyConfig);
         var payload =
-                URLEncodedUtils.parse(request.body(), defaultCharset()).stream()
+                URLEncodedUtils.parse(ctx.body(), defaultCharset()).stream()
                         .collect(toMap(NameValuePair::getName, NameValuePair::getValue))
                         .getOrDefault("logout_token", "");
-        var useAlternativeDomain = "true".equals(request.cookie("useAlternativeDomain"));
+        var useAlternativeDomain = "true".equals(ctx.cookie("useAlternativeDomain"));
         try {
             var jwt = SignedJWT.parse(payload);
 
@@ -41,18 +37,18 @@ public class BackChannelLogoutHandler implements Route {
                     .ifPresentOrElse(
                             claims -> {
                                 LOG.info("Validated logout token. Claims: {}", claims);
-                                response.status(200);
+                                ctx.status(200);
                             },
                             () -> {
                                 LOG.error("Unable to validate logout token");
-                                response.status(400);
+                                ctx.status(400);
                             });
 
         } catch (ParseException e) {
             LOG.info("Exception when parsing JWT", e);
-            response.status(500);
+            ctx.status(500);
         }
 
-        return "";
+        ctx.result("");
     }
 }

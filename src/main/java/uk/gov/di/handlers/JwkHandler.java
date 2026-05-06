@@ -4,9 +4,7 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
-import spark.Request;
-import spark.Response;
-import spark.Route;
+import io.javalin.http.Context;
 
 import java.io.Serializable;
 import java.security.interfaces.RSAPublicKey;
@@ -15,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class JwkHandler implements Route {
+public class JwkHandler {
     private final JWKSet jwkSet;
 
     public JwkHandler(Map<String, Serializable> jwksConfig) {
@@ -34,11 +32,9 @@ public class JwkHandler implements Route {
         }
     }
 
-    @Override
-    public Object handle(Request request, Response response) {
-
-        response.type("application/json");
-        response.header("Cache-Control", "max-age=86400");
-        return jwkSet.toJSONObject(true);
+    public void handle(Context ctx) {
+        ctx.contentType("application/json");
+        ctx.header("Cache-Control", "max-age=86400");
+        ctx.json(jwkSet.toJSONObject(true));
     }
 }
