@@ -32,8 +32,7 @@ public class OidcRp {
         var relyingPartyGetHandler = new RelyingPartyGetHandler();
         var relyingPartyPostHandler = new RelyingPartyPostHandler();
 
-        Javalin app =
-                Javalin.create(
+        Javalin.create(
                         config -> {
                             config.staticFiles.add("/public");
                             config.jetty.port = getPort();
@@ -64,10 +63,9 @@ public class OidcRp {
 
                             config.routes.exception(Exception.class, exceptionHandler::handle);
                             config.routes.error(500, internalServerErrorHandler::handle);
-                            config.routes.after("/*", ResponseHeaderHelper::setHeaders);
-                        });
-
-        app.start();
+                            config.routes.after(ResponseHeaderHelper::setHeaders);
+                        })
+                .start();
     }
 
     private int getPort() {
