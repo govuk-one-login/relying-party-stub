@@ -1,34 +1,29 @@
 package uk.gov.di.handlers;
 
+import io.javalin.http.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.Request;
-import spark.Response;
-import spark.Route;
 import uk.gov.di.config.Configuration;
 import uk.gov.di.utils.Oidc;
 
 import java.util.UUID;
 
-public class SignOutHandler implements Route {
+public class SignOutHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(SignOutHandler.class);
 
-    @Override
-    public Object handle(Request request, Response response) throws Exception {
+    public void handle(Context ctx) throws Exception {
         LOG.info("Generating log out request");
-        var relyingPartyConfig =
-                Configuration.getRelyingPartyConfig(request.cookie("relyingParty"));
+        var relyingPartyConfig = Configuration.getRelyingPartyConfig(ctx.cookie("relyingParty"));
         var oidcClient = new Oidc(relyingPartyConfig);
-        var useAlternativeDomain = "true".equals(request.cookie("useAlternativeDomain"));
+        var useAlternativeDomain = "true".equals(ctx.cookie("useAlternativeDomain"));
 
         var logoutUri =
                 oidcClient.buildLogoutUrl(
-                        request.cookie("idToken"),
+                        ctx.cookie("idToken"),
                         UUID.randomUUID().toString(),
                         relyingPartyConfig.postLogoutRedirectUrl(),
                         useAlternativeDomain);
-        response.redirect(logoutUri);
-        return null;
+        ctx.redirect(logoutUri);
     }
 }

@@ -44,9 +44,6 @@ ext {
 dependencies {
     // Constraints on transitive dependencies of dependencies
     constraints {
-        implementation("org.eclipse.jetty:jetty-server:[10.0.23,11)")
-        implementation("org.eclipse.jetty:jetty-webapp:[10.0.23,11)")
-        implementation("io.netty:netty-common:[4.1.115.Final,4.2)")
         implementation('io.netty:netty-codec-http2') {
             version { strictly '[4.1.125.Final,4.2.0)' }
             because 'CVE-2025-58056 and CVE-2025-58057 ars fixed in io.netty:netty-codec-http2:4.1.125.Final and higher'
@@ -62,8 +59,8 @@ dependencies {
     }
 
     implementation(platform("software.amazon.awssdk:bom:2.30.21"))
-    implementation "com.sparkjava:spark-core:2.9.4",
-            "com.sparkjava:spark-template-mustache:2.7.1",
+    implementation "io.javalin:javalin:7.2.0",
+            "io.javalin:javalin-rendering-mustache:7.2.0",
             "com.nimbusds:oauth2-oidc-sdk:11.27",
             "org.apache.logging.log4j:log4j-api:${dependencyVersions.log4j}",
             "org.apache.logging.log4j:log4j-core:${dependencyVersions.log4j}",

@@ -1,15 +1,14 @@
 package uk.gov.di.handlers;
 
+import io.javalin.http.Context;
+import io.javalin.http.Cookie;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
-import spark.Request;
-import spark.Response;
 import uk.gov.di.config.Configuration;
 import uk.gov.di.config.RPConfig;
-import uk.gov.di.utils.ViewHelper;
 
-import java.util.HashSet;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -23,8 +22,7 @@ class HomeHandlerTest {
     @Test
     void homeHandlerRendersWebScreenIfClientTypeIsWeb() {
         try (MockedStatic<Configuration> configurationMockedStatic =
-                        mockStatic(Configuration.class);
-                MockedStatic<ViewHelper> viewHelperMock = mockStatic(ViewHelper.class)) {
+                mockStatic(Configuration.class)) {
             var relyingPartyConfigMock = mock(RPConfig.class);
             configurationMockedStatic
                     .when(() -> Configuration.getRelyingPartyConfig(null))
@@ -32,12 +30,11 @@ class HomeHandlerTest {
             when(relyingPartyConfigMock.serviceName()).thenReturn("Test Service");
             when(relyingPartyConfigMock.clientType()).thenReturn("web");
 
-            var mockRequest = mock(Request.class);
-            var mockResponse = mock(Response.class);
+            var mockCtx = mock(Context.class);
 
-            homeHandler.handle(mockRequest, mockResponse);
+            homeHandler.handle(mockCtx);
 
-            viewHelperMock.verify(() -> ViewHelper.render(any(), eq("home.mustache")));
+            verify(mockCtx).render(eq("/home.mustache"), any());
         }
     }
 
@@ -52,28 +49,19 @@ class HomeHandlerTest {
             when(relyingPartyConfigMock.serviceName()).thenReturn("Test Service");
             when(relyingPartyConfigMock.clientType()).thenReturn("web");
 
-            var mockRequest = mock(Request.class);
-            var mockResponse = mock(Response.class);
+            var mockCtx = mock(Context.class);
+            when(mockCtx.queryParam("relyingParty")).thenReturn("testRpValue");
 
-            when(mockRequest.queryParams())
-                    .thenReturn(
-                            new HashSet<>() {
-                                {
-                                    add("relyingParty");
-                                }
-                            });
-            when(mockRequest.queryParams("relyingParty")).thenReturn("testRpValue");
+            homeHandler.handle(mockCtx);
 
-            homeHandler.handle(mockRequest, mockResponse);
-
-            verify(mockResponse)
-                    .cookie(
-                            eq("/"),
-                            eq("relyingParty"),
-                            eq("testRpValue"),
-                            eq(3600),
-                            eq(false),
-                            eq(true));
+            ArgumentCaptor<Cookie> cookieCaptor = ArgumentCaptor.forClass(Cookie.class);
+            verify(mockCtx).cookie(cookieCaptor.capture());
+            Cookie cookie = cookieCaptor.getValue();
+            assertEquals("relyingParty", cookie.getName());
+            assertEquals("testRpValue", cookie.getValue());
+            assertEquals("/", cookie.getPath());
+            assertEquals(3600, cookie.getMaxAge());
+            assertEquals(true, cookie.isHttpOnly());
         }
     }
 }
