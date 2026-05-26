@@ -40,7 +40,9 @@ public class AuthCallbackHandler implements Route {
         var authCode = request.queryParams("code");
         var tokens =
                 oidcClient.makeTokenRequest(
-                        authCode, relyingPartyConfig.authCallbackUrl(), codeVerifierValue,
+                        authCode,
+                        relyingPartyConfig.authCallbackUrl(),
+                        codeVerifierValue,
                         useAlternativeDomain);
         oidcClient.validateIdToken(tokens.getIDToken(), useAlternativeDomain);
         response.cookie("/", "idToken", tokens.getIDToken().getParsedString(), 3600, false, true);
