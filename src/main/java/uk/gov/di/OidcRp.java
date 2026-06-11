@@ -1,6 +1,8 @@
 package uk.gov.di;
 
-import com.google.gson.Gson;
+import com.github.mustachejava.DefaultMustacheFactory;
+import io.javalin.Javalin;
+import io.javalin.rendering.template.JavalinMustache;
 import uk.gov.di.handlers.AuthCallbackHandler;
 import uk.gov.di.handlers.AuthorizeHandler;
 import uk.gov.di.handlers.BackChannelLogoutHandler;
@@ -14,26 +16,12 @@ import uk.gov.di.handlers.SignOutHandler;
 import uk.gov.di.handlers.SignedOutHandler;
 import uk.gov.di.utils.ResponseHeaderHelper;
 
-import static spark.Spark.after;
-import static spark.Spark.exception;
-import static spark.Spark.get;
-import static spark.Spark.internalServerError;
-import static spark.Spark.path;
-import static spark.Spark.port;
-import static spark.Spark.post;
-import static spark.Spark.staticFileLocation;
 import static uk.gov.di.config.Configuration.getClientsPublicKeys;
 
 public class OidcRp {
+    private static final int DEFAULT_PORT = 8080;
+
     public OidcRp() {
-        staticFileLocation("/public");
-        port(8080);
-
-        initRoutes();
-    }
-
-    public void initRoutes() {
-
         var homeHandler = new HomeHandler();
         var authorizeHandler = new AuthorizeHandler();
         var authCallbackHandler = new AuthCallbackHandler();
@@ -43,36 +31,45 @@ public class OidcRp {
         var exceptionHandler = new ExceptionHandler();
         var relyingPartyGetHandler = new RelyingPartyGetHandler();
         var relyingPartyPostHandler = new RelyingPartyPostHandler();
-        var gson = new Gson();
 
-        get("/", homeHandler);
-        path(
-                "/oidc",
-                () -> {
-                    post("/auth", authorizeHandler);
-                    get("/authorization-code/callback", authCallbackHandler);
-                });
+        Javalin.create(
+                        config -> {
+                            config.staticFiles.add("/public");
+                            config.jetty.port = getPort();
+                            config.fileRenderer(
+                                    new JavalinMustache(new DefaultMustacheFactory("templates")));
 
-        post("/logout", logoutHandler);
-        get("/signed-out", signedOutHandler);
-        post("/backchannel-logout", new BackChannelLogoutHandler());
-        get("/relying-party", relyingPartyGetHandler);
-        post("/relying-party", relyingPartyPostHandler);
-        getClientsPublicKeys()
-                .forEach(
-                        clientIdAndPubKey -> {
-                            get(
-                                    "/"
-                                            + clientIdAndPubKey.get("client_id")
-                                            + "/.well-known/jwks.json",
-                                    new JwkHandler(clientIdAndPubKey),
-                                    gson::toJson);
-                        });
+                            config.routes.get("/", homeHandler::handle);
+                            config.routes.post("/oidc/auth", authorizeHandler::handle);
+                            config.routes.get(
+                                    "/oidc/authorization-code/callback",
+                                    authCallbackHandler::handle);
+                            config.routes.post("/logout", logoutHandler::handle);
+                            config.routes.get("/signed-out", signedOutHandler::handle);
+                            config.routes.post(
+                                    "/backchannel-logout", new BackChannelLogoutHandler()::handle);
+                            config.routes.get("/relying-party", relyingPartyGetHandler::handle);
+                            config.routes.post("/relying-party", relyingPartyPostHandler::handle);
+                            getClientsPublicKeys()
+                                    .forEach(
+                                            clientIdAndPubKey ->
+                                                    config.routes.get(
+                                                            "/"
+                                                                    + clientIdAndPubKey.get(
+                                                                            "client_id")
+                                                                    + "/.well-known/jwks.json",
+                                                            new JwkHandler(clientIdAndPubKey)
+                                                                    ::handle));
 
-        exception(Exception.class, exceptionHandler);
+                            config.routes.exception(Exception.class, exceptionHandler::handle);
+                            config.routes.error(500, internalServerErrorHandler::handle);
+                            config.routes.after(ResponseHeaderHelper::setHeaders);
+                        })
+                .start();
+    }
 
-        internalServerError(internalServerErrorHandler);
-
-        after("/*", (req, res) -> ResponseHeaderHelper.setHeaders(res));
+    private int getPort() {
+        var envPort = System.getenv("PORT");
+        return envPort == null ? DEFAULT_PORT : Integer.parseInt(envPort);
     }
 }

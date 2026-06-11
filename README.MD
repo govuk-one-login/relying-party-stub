@@ -7,6 +7,9 @@ Once you have gone through the authentication/identity journey, you will be redi
 displaying the user info returned by the One Login service.
 
 ## Local Setup
+
+### Standalone against a deployed environment
+
 You'll need to set up environment variables to run locally. Make a copy of the `.env.template` file, and rename it `.env`.
 
 You will also need to set up your local configuration. Make a copy of the `config.json.template` file named `config.json`.
@@ -18,6 +21,12 @@ We typically run the stub against the build environment of One Login, as this ha
 To run the stub locally, run `docker compose up --build`.
 
 It will be accessible on port 8080.
+
+### As part of Orchestration local running
+
+If running as part of the orchestration local setup, the docker image is run and configured from the orchestration API codebase.
+
+In this scenario it runs on port 4000, and uses the config in `.env.local` and `config.local.json`.
 
 ## Configuration
 

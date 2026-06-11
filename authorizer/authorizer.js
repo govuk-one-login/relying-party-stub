@@ -40,7 +40,11 @@ exports.handler = async(event) => {
         '3.9.56.99/32',
         //Below IP's are public IP of AWS Codebuild in eu-west-2 region
         '35.176.92.32/29',
-        '18.169.230.200/29'
+        '18.169.230.200/29',
+        //Below IPs are public IPs for auth staging VPC
+        '18.130.204.216/32',
+        '35.179.68.145/32',
+        '35.177.56.38/32'
     ];
     const isValidIp = isIp4InCidrs(ipAddress, validIps);
     return {

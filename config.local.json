@@ -1,0 +1,13 @@
+{
+  "local-rp-stub" : {
+    "//": "This key is only for use in insecure local environments - i.e. the local orchestration API",
+    "client_private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCsYqyBB1dDgtGr\nA5njRB6Lskjvbu7b+VFoDl3Ji3uqgLyiVCA6bFOt9i2NCH52NSZVMDSOOCpN2ofB\nf4/jzhcpMwTA7ko98kDukgHAeN+JZsdovIPLAxOJKhOqmk+8zVFE45CH+oI3kRyV\n+TGKGulUx3MFhGfsVuR/X7LCw36qCAdyzMxxVXk8T+jCOkQ36fboiBqNZholBA2O\n0DoMK9QIo+M5tMC+zUGuuGU40AzD5eRcBIUD8LYbpcwSy5epyVMI/+z0Dq8UP4j7\nLzGzOen1/bibx/kbz2CHE7he+ydRKpsTzmj7BYvXI0qYAMlyPf51WkgbaqnR3J3X\nbEOj41d/AgMBAAECggEAG0S35+iAMnLboBMqQRZ8mc7NFb7ftCvnPNq6QDrlsti5\naMN+SO+WJGMC3UKA3/RUCM60HuPIjAHWTqf93A8KKooM+vMsCvTVYPJMqk8UgSN2\ncLK9SvGaIgI7aSsOvkgLeSZhgvj//IfiVIuTfWFOE+CW6RetlBJCA9oLU3QMMcYK\nYihvyrg5ixiwATAn5Ndwxkuc4ge3jE3gg5BjALR+6QTZZSoVtWtdwpKtf/XY+iIR\nll/zZKUsESoMh6Bfmb1sOTBsh0/xHjm9mckOfxj0SajshDWggHSZ3q3Yeb6Thbmm\nJhZDl68f89S42m6bXNVQWcsfzg28qr6TLZ4rVP0rQQKBgQDil1jzfRp4yIxjBMCs\nu0cBhOolDaSTaWNvNw4zrkfa7mWAVqEdKUm9OdurKVP4Oq9WsWNs8gT4yqBonImU\ny3icog0kIwuLmSK+5yVTgaZLSNjC6YCRkDXbgaJOaLvTVfdZvCHaCRsMznWrciHt\nacgWtcxC8r5hofwq13TarWu4QQKBgQDCwk1H1Ll2UU9K+J4Zma9geCxud81Ovhg1\nX6RUGgTK9xwhIE5rFXCbAgLl5K5hLcgsYqc1GpQizRPRRLDdpb6bP4hr4el5kZqk\nqXJQJSLZQZmtJVZ0VsWzpSWj54t7d8xpUQNN8F8R26xGgShTVPeFLt5KRfvfvELV\nI0l1H/UfvwKBgFPX4MgoEHWE771r8sd3fKypO+J+C9mn820hmBWzdU8jS1eTtoYN\n0wU7tXa+Eh4VyO9xL/MOEpzkjTpoQdhW+cgrhmVKumjrPxoYeY1OufO9fseQk0xJ\nakRQ0Xfl9Sob8yy3GmeNWv8AHjZUQw2QSMNufaiAHcYOpDpOAyUval6BAoGBAIKa\n5FJQUFMM8dy33uYSDu7lh/5IrtCoX/mi+sM/c4lcr2tzi8L57Lq2XZUnht06Y2uI\neNL+0OqJlkmXA/iPhsP7lhOquvRAdXEJBNTEIpuJB3J6gICiFBCFpjlFNF+HFfhm\nUI36rPZ/1was5IsFhru0k3NBfUgrqrHd6Qv3c11nAoGAbgwDLdtJJL03xySzgF6h\nqGFkEtkqZCKh4BJ8LUM0bjRqpJ5UQphJqjmaWjn7fCZ5OOds9MyV9l29RnmuIz3G\n+mNyhgK2PpLFssqCJjne40Jsa/ppYky8Xv8sZrcZ8tkMMIkCgFW/vGsrMoDZzmxg\nDRb2Ns1o7owaJzUkJcdazDc=\n-----END PRIVATE KEY-----",
+    "account_management_url": "https://home.account.gov.uk",
+    "client_id": "local-rp-stub",
+    "client_type": "web",
+    "id_token_signing_algorithm": "ES256",
+    "service_name": "Local RP Stub",
+    "op_base_url": "http://host.docker.internal:4400/",
+    "token_client_secret": null
+  }
+}
