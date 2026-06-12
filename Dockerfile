@@ -3,7 +3,7 @@ FROM node:26.3.0-alpine@sha256:144769ec3f32e8ee36b3cfde91e82bee25d9367b20f31a151
 COPY scripts .
 RUN npm install --ignore-scripts
 
-FROM gradle:8.14.3-jdk17@sha256:71624f9e8bdbbccb9fe13717579faafce0d52846eb5048bf6567691c8d933de8 AS build
+FROM gradle:9.5.1-jdk17@sha256:dda01f5161b21d12403b978e3c020478da9d85c2d4c0c76aeca7df7c83eb6c53 AS build
 WORKDIR /home/gradle/src
 
 COPY --chown=gradle:gradle gradlew build.gradle ./
