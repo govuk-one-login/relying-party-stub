@@ -15,13 +15,12 @@ import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
 import com.nimbusds.openid.connect.sdk.claims.ClaimRequirement;
 import com.nimbusds.openid.connect.sdk.claims.ClaimsSetRequest;
+import io.javalin.http.Context;
+import io.javalin.http.Cookie;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.Request;
-import spark.Response;
-import spark.Route;
 import uk.gov.di.config.Configuration;
 import uk.gov.di.config.RPConfig;
 import uk.gov.di.utils.Oidc;
@@ -43,23 +42,20 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class AuthorizeHandler implements Route {
+public class AuthorizeHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthorizeHandler.class);
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Override
-    public Object handle(Request request, Response response) {
-        var relyingPartyConfig =
-                Configuration.getRelyingPartyConfig(request.cookie("relyingParty"));
+    public void handle(Context ctx) {
+        var relyingPartyConfig = Configuration.getRelyingPartyConfig(ctx.cookie("relyingParty"));
         var oidcClient = new Oidc(relyingPartyConfig);
         try {
             List<String> scopes = new ArrayList<>();
             scopes.add("openid");
 
-            List<NameValuePair> pairs =
-                    URLEncodedUtils.parse(request.body(), Charset.defaultCharset());
+            List<NameValuePair> pairs = URLEncodedUtils.parse(ctx.body(), Charset.defaultCharset());
 
             Map<String, String> formParameters =
                     pairs.stream()
@@ -72,14 +68,16 @@ public class AuthorizeHandler implements Route {
             if (relyingPartyConfig.clientType().equals("app")) {
                 LOG.info("Doc Checking App journey initialized");
                 scopes.add("doc-checking-app");
+                var useAlternativeDomain = "true".equals(ctx.cookie("useAlternativeDomain"));
                 var opURL =
                         oidcClient.buildDocAppAuthorizeRequest(
                                 relyingPartyConfig.authCallbackUrl(),
                                 Scope.parse(scopes),
-                                language);
+                                language,
+                                useAlternativeDomain);
                 LOG.info("Redirecting to OP");
-                response.redirect(opURL);
-                return null;
+                ctx.redirect(opURL);
+                return;
             }
 
             if (formParameters.containsKey("scopes-email")) {
@@ -235,7 +233,9 @@ public class AuthorizeHandler implements Route {
                 codeChallengeMethod = CodeChallengeMethod.S256;
                 codeVerifier = new CodeVerifier();
 
-                response.cookie("/", "codeVerifier", codeVerifier.getValue(), 3600, false, true);
+                ctx.cookie(
+                        new Cookie(
+                                "codeVerifier", codeVerifier.getValue(), "/", 3600, false, true));
             }
 
             String loginHint = null;
@@ -250,7 +250,7 @@ public class AuthorizeHandler implements Route {
             if (!Objects.equals(formParameters.get("channel"), "none")) {
                 channel = formParameters.get("channel");
             }
-
+            var useAlternativeDomain = "true".equals(ctx.cookie("useAlternativeDomain"));
             var authRequest =
                     buildAuthorizeRequest(
                             relyingPartyConfig,
@@ -267,11 +267,11 @@ public class AuthorizeHandler implements Route {
                             codeChallengeMethod,
                             codeVerifier,
                             loginHint,
-                            channel);
+                            channel,
+                            useAlternativeDomain);
 
             LOG.info("Redirecting to OP");
-            response.redirect(authRequest.toURI().toString());
-            return null;
+            ctx.redirect(authRequest.toURI().toString());
 
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -306,7 +306,8 @@ public class AuthorizeHandler implements Route {
             CodeChallengeMethod codeChallengeMethod,
             CodeVerifier codeVerifier,
             String loginHint,
-            String channel)
+            String channel,
+            boolean useAlternativeDomain)
             throws URISyntaxException {
         if ("object".equals(formParameters.getOrDefault("request", "query"))) {
             LOG.info("Building authorize request with JAR");
@@ -323,7 +324,8 @@ public class AuthorizeHandler implements Route {
                     codeChallengeMethod,
                     codeVerifier,
                     loginHint,
-                    channel);
+                    channel,
+                    useAlternativeDomain);
         } else {
             LOG.info("Building authorize request with query params");
             return oidcClient.buildQueryParamAuthorizeRequest(
@@ -337,7 +339,8 @@ public class AuthorizeHandler implements Route {
                     maxAge,
                     codeChallengeMethod,
                     codeVerifier,
-                    channel);
+                    channel,
+                    useAlternativeDomain);
         }
     }
 }

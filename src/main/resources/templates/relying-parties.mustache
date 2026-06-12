@@ -68,9 +68,17 @@
                                 <option value="{{clientId}}">{{serviceName}}</option>
                             {{/relyingParties}}
                         </select>
+                        </div>
+                      <div class="govuk-form-group">
+                        <div class="govuk-checkboxes">
+                            <div class="govuk-checkboxes__item">
+                              <input class="govuk-checkboxes__input" type="checkbox" name="use-alternative-domain" id="use-alternative-domain"{{#useAlternativeDomain}} checked {{/useAlternativeDomain}}/>
+                              <label class="govuk-label govuk-checkboxes__label" for="use-alternative-domain">Use alternative domain (if present)</label>
+                            </div>
+                        </div>
+                       </div>
                     </div>
-
-                    <button class="govuk-button" type="submit">Submit</button>
+                  <button class="govuk-button" type="submit">Submit</button>
                 </form>
             </div>
         </div>

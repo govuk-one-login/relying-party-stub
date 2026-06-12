@@ -1,14 +1,24 @@
 buildscript {
     repositories {
+        mavenCentral()
+
         maven {
-            url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
+            url 'https://repo.danubetech.com/repository/maven-public/'
+        }
+    }
+    // Constraints on transitive dependencies of plugins
+    dependencies {
+        constraints {
+            classpath('org.bouncycastle:bcprov-jdk18on:[1.84,)') {
+                because 'CVE-2026-5598 is fixed in org.bouncycastle:bcprov-jdk18on:1.84 and higher'
+            }
         }
     }
 }
 
 plugins {
-    id "com.diffplug.spotless" version "7.2.1"
-    id "org.sonarqube" version "6.1.0.5360"
+    id "com.diffplug.spotless" version "8.0.0"
+    id "org.sonarqube" version "7.2.3.7755"
 }
 
 apply plugin: 'java'
@@ -18,41 +28,53 @@ apply plugin: 'idea'
 group 'uk.gov.di'
 
 repositories {
+    mavenCentral()
+
     maven {
-        url 'https://gds.jfrog.io/artifactory/di-allowed-repos'
+        url 'https://repo.danubetech.com/repository/maven-public/'
     }
 }
 
 ext {
     dependencyVersions = [
-        log4j: "2.24.3"
+        log4j: "2.25.4"
     ]
 }
 
 dependencies {
+    // Constraints on transitive dependencies of dependencies
     constraints {
-        implementation("org.eclipse.jetty:jetty-server:[10.0.23,11)")
-        implementation("org.eclipse.jetty:jetty-webapp:[10.0.23,11)")
-        implementation("io.netty:netty-common:[4.1.115.Final,4.2)")
+        implementation('io.netty:netty-codec-http2') {
+            version { strictly '[4.1.125.Final,4.2.0)' }
+            because 'CVE-2025-58056 and CVE-2025-58057 ars fixed in io.netty:netty-codec-http2:4.1.125.Final and higher'
+        }
+        implementation('io.netty:netty-codec-http') {
+            version { strictly '[4.1.129.Final,4.2.0)' }
+            because 'CVE-2025-67735 fixed in io.netty:netty-codec-http:4.1.129.Final and higher'
+        }
+        implementation('com.fasterxml.jackson.core:jackson-core:[2.21.1,)') {
+            version { strictly '[2.21.1,)' }
+            because 'GHSA-72hv-8253-57qq is fixed in com.fasterxml.jackson.core:jackson-core:2.21.1 and higher'
+        }
     }
 
     implementation(platform("software.amazon.awssdk:bom:2.30.21"))
-    implementation "com.sparkjava:spark-core:2.9.4",
-            "com.sparkjava:spark-template-mustache:2.7.1",
-            "com.nimbusds:oauth2-oidc-sdk:11.20",
+    implementation "io.javalin:javalin:7.2.0",
+            "io.javalin:javalin-rendering-mustache:7.2.0",
+            "com.nimbusds:oauth2-oidc-sdk:11.27",
             "org.apache.logging.log4j:log4j-api:${dependencyVersions.log4j}",
             "org.apache.logging.log4j:log4j-core:${dependencyVersions.log4j}",
             "org.apache.logging.log4j:log4j-slf4j2-impl:${dependencyVersions.log4j}",
             "org.apache.httpcomponents:httpclient:4.5.14",
             'net.minidev:json-smart:2.6.0',
-            "com.google.code.gson:gson:2.13.1",
+            "com.google.code.gson:gson:2.13.2",
             "software.amazon.awssdk:secretsmanager",
-            'com.fasterxml.jackson.core:jackson-databind:2.19.2',
-            "com.nimbusds:nimbus-jose-jwt:10.4"
-    implementation("decentralized-identity:did-common-java:1.18.0")
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4',
+            'com.fasterxml.jackson.core:jackson-databind:2.20.0',
+            "com.nimbusds:nimbus-jose-jwt:10.5"
+    implementation("decentralized-identity:did-common-java:1.26.0")
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:6.0.1',
             'org.mockito:mockito-inline:5.2.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4',
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:6.0.1',
             'org.junit.platform:junit-platform-launcher'
 }
 

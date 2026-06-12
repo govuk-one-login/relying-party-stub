@@ -16,7 +16,8 @@ public record RPConfig(
         String serviceName,
         String opBaseUrl,
         String tokenClientSecret,
-        String inheritedIdentityJwtSigningKey) {
+        String inheritedIdentityJwtSigningKey,
+        String alternativeBaseUrl) {
 
     private static final String kid = UUID.randomUUID().toString();
 

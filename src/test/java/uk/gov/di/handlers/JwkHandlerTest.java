@@ -4,10 +4,9 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
+import io.javalin.http.Context;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import spark.Request;
-import spark.Response;
 
 import java.io.Serializable;
 import java.security.interfaces.RSAPublicKey;
@@ -17,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -44,13 +42,13 @@ public class JwkHandlerTest {
 
     @Test
     void shouldReturnAJwkResponse() throws ParseException {
+        var mockCtx = mock(Context.class);
 
-        var mockRequest = mock(Request.class);
-        var mockResponse = mock(Response.class);
-        var response = jwkHandler.handle(mockRequest, mockResponse);
-        verify(mockResponse).header(eq("Cache-Control"), eq("max-age=86400"));
-        verify(mockResponse).type("application/json");
-        assertEquals(expectedJWK(), response);
+        jwkHandler.handle(mockCtx);
+
+        verify(mockCtx).header(eq("Cache-Control"), eq("max-age=86400"));
+        verify(mockCtx).contentType("application/json");
+        verify(mockCtx).json(eq(expectedJWK()));
     }
 
     private Map<String, Object> expectedJWK() throws ParseException {

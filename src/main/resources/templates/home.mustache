@@ -63,6 +63,9 @@
             <h1 class="govuk-heading-xl">
                 {{servicename}}
             </h1>
+            {{#useAlternativeDomain}}
+              <h3 class="govuk-heading-m">Using alternative domain</h3>
+            {{/useAlternativeDomain}}
         </div>
         <div class="govuk-grid-row">
             <form method="post" action="/oidc/auth">

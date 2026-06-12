@@ -1,63 +1,64 @@
 package uk.gov.di.handlers;
 
+import io.javalin.http.Context;
+import io.javalin.http.Cookie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.Request;
-import spark.Response;
-import spark.Route;
 import uk.gov.di.config.Configuration;
 import uk.gov.di.config.RPConfig;
 import uk.gov.di.utils.CoreIdentityValidator;
 import uk.gov.di.utils.Oidc;
-import uk.gov.di.utils.ViewHelper;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class AuthCallbackHandler implements Route {
+public class AuthCallbackHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthCallbackHandler.class);
 
-    @Override
-    public Object handle(Request request, Response response) throws Exception {
+    public void handle(Context ctx) throws Exception {
         LOG.info("Callback received");
-        if (request.queryParams("error") != null) {
-            return renderError(request);
+        if (ctx.queryParam("error") != null) {
+            renderError(ctx);
+            return;
         }
 
-        var relyingPartyConfig =
-                Configuration.getRelyingPartyConfig(request.cookie("relyingParty"));
+        var relyingPartyConfig = Configuration.getRelyingPartyConfig(ctx.cookie("relyingParty"));
         var oidcClient = new Oidc(relyingPartyConfig);
         var validator = CoreIdentityValidator.createValidator(relyingPartyConfig);
 
-        var codeVerifierValue = request.cookie("codeVerifier");
+        var codeVerifierValue = ctx.cookie("codeVerifier");
         if (codeVerifierValue != null) {
-            response.removeCookie("/", "codeVerifier");
+            ctx.removeCookie("codeVerifier", "/");
         }
-
+        var useAlternativeDomain = "true".equals(ctx.cookie("useAlternativeDomain"));
         var tokens =
                 oidcClient.makeTokenRequest(
-                        request.queryParams("code"),
+                        ctx.queryParam("code"),
                         relyingPartyConfig.authCallbackUrl(),
-                        codeVerifierValue);
-        oidcClient.validateIdToken(tokens.getIDToken());
-        response.cookie("/", "idToken", tokens.getIDToken().getParsedString(), 3600, false, true);
-        var userInfo = oidcClient.makeUserInfoRequest(tokens.getAccessToken());
+                        codeVerifierValue,
+                        useAlternativeDomain);
+        oidcClient.validateIdToken(tokens.getIDToken(), useAlternativeDomain);
+        ctx.cookie(
+                new Cookie(
+                        "idToken", tokens.getIDToken().getParsedString(), "/", 3600, false, true));
+        var userInfo =
+                oidcClient.makeUserInfoRequest(tokens.getAccessToken(), useAlternativeDomain);
 
-        var model = new HashMap<>();
+        var model = new HashMap<String, Object>();
         model.put("id_token", tokens.getIDToken().getParsedString());
         model.put("access_token", tokens.getAccessToken().toJSONString());
         model.put("user_info_response", userInfo.toJSONString());
         model.put("journey_id", tokens.getIDToken().getJWTClaimsSet().getStringClaim("sid"));
         model.put("client_name", relyingPartyConfig.serviceName());
 
-        var templateName = "userinfo.mustache";
+        var templateName = "/userinfo.mustache";
         if (relyingPartyConfig.clientType().equals("app")) {
             List<String> docAppCredential = (List<String>) userInfo.getClaim("doc-app-credential");
             model.put("doc_app_credential", docAppCredential.get(0));
-            templateName = "doc-app-userinfo.mustache";
+            templateName = "/doc-app-userinfo.mustache";
         } else {
             model.put("email", userInfo.getEmailAddress());
             model.put("phone_number", userInfo.getPhoneNumber());
@@ -95,28 +96,24 @@ public class AuthCallbackHandler implements Route {
         }
         model.put("my_account_url", relyingPartyConfig.accountManagementUrl());
 
-        return ViewHelper.render(model, templateName);
+        ctx.render(templateName, model);
     }
 
-    private static Object renderError(Request request) {
+    private static void renderError(Context ctx) {
         LOG.error("Error response in callback");
         Optional<RPConfig> rpConfigOptional = Optional.empty();
         try {
             rpConfigOptional =
-                    Optional.of(
-                            Configuration.getRelyingPartyConfig(request.cookie("relyingParty")));
+                    Optional.of(Configuration.getRelyingPartyConfig(ctx.cookie("relyingParty")));
         } catch (Exception e) {
             LOG.warn("Failed to get config for callback error, ignoring: {}", e.getMessage());
         }
 
-        var model = new HashMap<>();
-        model.put("error", request.queryParams("error"));
-        model.put("error_description", request.queryParams("error_description"));
+        var model = new HashMap<String, Object>();
+        model.put("error", ctx.queryParam("error"));
+        model.put("error_description", ctx.queryParam("error_description"));
 
-        rpConfigOptional.ifPresent(
-                c -> {
-                    model.put("client_name", c.serviceName());
-                });
-        return ViewHelper.render(model, "callback-error.mustache");
+        rpConfigOptional.ifPresent(c -> model.put("client_name", c.serviceName()));
+        ctx.render("/callback-error.mustache", model);
     }
 }

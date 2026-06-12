@@ -5,6 +5,8 @@ updates:
     schedule:
       interval: daily
       time: "03:00"
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 10
     target-branch: main
     labels:
@@ -14,6 +16,8 @@ updates:
     schedule:
       interval: daily
       time: "03:00"
+    cooldown:
+      default-days: 7
     target-branch: main
     labels:
       - dependabot
@@ -22,6 +26,8 @@ updates:
     schedule:
       interval: daily
       time: "04:15"
+    cooldown:
+      default-days: 7
     target-branch: main
     labels:
       - dependabot
@@ -30,6 +36,8 @@ updates:
     schedule:
       interval: daily
       time: "03:00"
+    cooldown:
+      default-days: 7
     target-branch: main
     labels:
       - dependabot
