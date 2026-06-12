@@ -59,8 +59,8 @@ dependencies {
     }
 
     implementation(platform("software.amazon.awssdk:bom:2.30.21"))
-    implementation "io.javalin:javalin:7.2.0",
-            "io.javalin:javalin-rendering-mustache:7.2.0",
+    implementation "io.javalin:javalin:7.2.2",
+            "io.javalin:javalin-rendering-mustache:7.2.2",
             "com.nimbusds:oauth2-oidc-sdk:11.27",
             "org.apache.logging.log4j:log4j-api:${dependencyVersions.log4j}",
             "org.apache.logging.log4j:log4j-core:${dependencyVersions.log4j}",
