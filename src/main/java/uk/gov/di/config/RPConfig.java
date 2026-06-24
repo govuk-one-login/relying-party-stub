@@ -38,4 +38,8 @@ public record RPConfig(
                 "public_key_id",
                 kid);
     }
+
+    public String getAlternativeBaseUrl(){
+        return  this.opBaseUrl.replace("oidc", "oidc-orch");
+    }
 }

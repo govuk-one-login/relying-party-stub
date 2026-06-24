@@ -84,7 +84,7 @@ public class Oidc {
         this.clientId = new ClientID(relyingPartyConfig.clientId());
         this.providerMetadata = loadProviderMetadata(idpUrl);
         this.alternativeProviderMetadata =
-                Optional.ofNullable(relyingPartyConfig.alternativeBaseUrl())
+                Optional.of(relyingPartyConfig.getAlternativeBaseUrl())
                         .map(this::loadProviderMetadata);
         this.privateKeyReader = new PrivateKeyReader(relyingPartyConfig.clientPrivateKey());
     }
