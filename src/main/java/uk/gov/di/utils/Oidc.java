@@ -60,6 +60,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -83,8 +84,17 @@ public class Oidc {
         this.providerMetadata = loadProviderMetadata(relyingPartyConfig.opBaseUrl());
         this.alternativeProviderMetadata =
                 Optional.ofNullable(relyingPartyConfig.alternativeBaseUrl())
-                        .map(this::loadProviderMetadata);
+                        .map((altDomain) -> this.loadProviderMetadata(relyingPartyConfig.opBaseUrl(), altDomain));
         this.privateKeyReader = new PrivateKeyReader(relyingPartyConfig.clientPrivateKey());
+    }
+
+    private OIDCProviderMetadata loadProviderMetadata(String expectedIssuer, String baseurl){
+        try {
+            return OIDCProviderMetadata.resolve(new Issuer(expectedIssuer), new URL(baseurl));
+        } catch (Exception e) {
+            LOG.error("Unexpected exception thrown when loading provider metadata", e);
+            throw new RuntimeException(e);
+        }
     }
 
     private OIDCProviderMetadata loadProviderMetadata(String baseUrl) {
