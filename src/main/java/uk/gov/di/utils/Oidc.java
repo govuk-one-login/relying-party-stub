@@ -86,11 +86,21 @@ public class Oidc {
         this.providerMetadata = loadProviderMetadata(idpUrl);
         this.alternativeProviderMetadata =
                 Optional.ofNullable(relyingPartyConfig.alternativeBaseUrl())
-                        .map((altDomain) -> this.loadProviderMetadata(relyingPartyConfig.opBaseUrl(), altDomain));
+                        .map(
+                                (altDomain) ->
+                                        this.loadProviderMetadata(
+                                                relyingPartyConfig.opBaseUrl(), altDomain));
         this.privateKeyReader = new PrivateKeyReader(relyingPartyConfig.clientPrivateKey());
+
+        alternativeProviderMetadata.ifPresent(
+                altPm -> {
+                    LOG.info(
+                            "Are Provider configs equivalent: {}",
+                            providerMetadata.equals(alternativeProviderMetadata.get()));
+                });
     }
 
-    private OIDCProviderMetadata loadProviderMetadata(String expectedIssuer, String baseurl){
+    private OIDCProviderMetadata loadProviderMetadata(String expectedIssuer, String baseurl) {
         try {
             return OIDCProviderMetadata.resolve(new Issuer(expectedIssuer), new URL(baseurl));
         } catch (Exception e) {
@@ -109,10 +119,21 @@ public class Oidc {
     }
 
     public UserInfo makeUserInfoRequest(AccessToken accessToken, boolean useAlternativeDomain)
-            throws IOException, ParseException {
+            throws IOException, ParseException, URISyntaxException {
         LOG.info("Making userinfo request");
-        var userInfoEndpointURI =
-                getProviderMetadata(useAlternativeDomain).getUserInfoEndpointURI();
+
+        URI userInfoEndpointURI;
+        if (useAlternativeDomain) {
+            userInfoEndpointURI =
+                    new URI(
+                            this.providerMetadata
+                                    .getUserInfoEndpointURI()
+                                    .toString()
+                                    .replace("oidc", "oidc-orch"));
+        } else {
+            userInfoEndpointURI = this.providerMetadata.getUserInfoEndpointURI();
+        }
+
         var httpResponse =
                 new UserInfoRequest(
                                 userInfoEndpointURI, new BearerAccessToken(accessToken.toString()))
@@ -146,7 +167,19 @@ public class Oidc {
                         new AuthorizationCode(authCode), new URI(authCallbackUrl), codeVerifier);
 
         try {
-            var tokenEndpointURI = getProviderMetadata(useAlternativeDomain).getTokenEndpointURI();
+            URI tokenEndpointURI;
+
+            if (useAlternativeDomain) {
+                tokenEndpointURI =
+                        new URI(
+                                this.providerMetadata
+                                        .getTokenEndpointURI()
+                                        .toString()
+                                        .replace("oidc", "oidc-orch"));
+            } else {
+                tokenEndpointURI = this.providerMetadata.getTokenEndpointURI();
+            }
+
             var clientAuthentication =
                     Optional.ofNullable(relyingPartyConfig.tokenClientSecret())
                             .map(this::clientSecretPost)
@@ -218,9 +251,20 @@ public class Oidc {
             String loginHint,
             String channel,
             boolean useAlternativeDomain)
-            throws RuntimeException {
+            throws RuntimeException, URISyntaxException {
         LOG.info("Building JAR Authorize Request");
-        var endpointURI = getProviderMetadata(useAlternativeDomain).getAuthorizationEndpointURI();
+        URI endpointURI;
+        if (useAlternativeDomain) {
+            endpointURI =
+                    new URI(
+                            this.providerMetadata
+                                    .getAuthorizationEndpointURI()
+                                    .toString()
+                                    .replace("oidc", "oidc-orch"));
+        } else {
+            endpointURI = this.providerMetadata.getAuthorizationEndpointURI();
+        }
+
         Prompt authRequestPrompt;
         try {
             authRequestPrompt = Prompt.parse(prompt);
@@ -232,7 +276,7 @@ public class Oidc {
                 new OIDCClaimsRequest().withUserInfoClaimsRequest(claimsSetRequest);
         var requestObject =
                 new JWTClaimsSet.Builder()
-                        .audience(endpointURI.toString())
+                        .audience(this.providerMetadata.getAuthorizationEndpointURI().toString())
                         .claim("redirect_uri", callbackUrl)
                         .claim("response_type", ResponseType.CODE.toString())
                         .claim("scope", Scope.parse(scopes).toString())
@@ -310,7 +354,18 @@ public class Oidc {
         } catch (ParseException e) {
             throw new RuntimeException("Unable to parse prompt", e);
         }
-        var endpointURI = getProviderMetadata(useAlternativeDomain).getAuthorizationEndpointURI();
+
+        URI endpointURI;
+        if (useAlternativeDomain) {
+            endpointURI =
+                    new URI(
+                            this.providerMetadata
+                                    .getAuthorizationEndpointURI()
+                                    .toString()
+                                    .replace("oidc", "oidc-orch"));
+        } else {
+            endpointURI = this.providerMetadata.getAuthorizationEndpointURI();
+        }
         var authorizationRequestBuilder =
                 new AuthenticationRequest.Builder(
                                 new ResponseType(ResponseType.Value.CODE),
@@ -360,44 +415,75 @@ public class Oidc {
     }
 
     public String buildDocAppAuthorizeRequest(
-            String callbackUrl, Scope scopes, String language, boolean useAlternativeDomain) {
+            String callbackUrl, Scope scopes, String language, boolean useAlternativeDomain) throws URISyntaxException {
         LOG.info("Building secure Authorize Request");
+        URI authorizeEndpointUri;
+        if (useAlternativeDomain) {
+            authorizeEndpointUri =
+                    new URI(
+                            this.providerMetadata
+                                    .getAuthorizationEndpointURI()
+                                    .toString()
+                                    .replace("oidc", "oidc-orch"));
+        } else {
+            authorizeEndpointUri = this.providerMetadata.getAuthorizationEndpointURI();
+        }
         var authRequestBuilder =
                 new AuthorizationRequest.Builder(
                                 new ResponseType(ResponseType.Value.CODE), this.clientId)
-                        .requestObject(
-                                generateSignedJWT(
-                                        scopes, callbackUrl, language, useAlternativeDomain))
+                        .requestObject(generateSignedJWT(scopes, callbackUrl, language))
                         .scope(new Scope(OIDCScopeValue.OPENID))
-                        .endpointURI(
-                                getProviderMetadata(useAlternativeDomain)
-                                        .getAuthorizationEndpointURI());
+                        .endpointURI(authorizeEndpointUri);
 
         return authRequestBuilder.build().toURI().toString();
     }
 
-    public String buildLogoutUrl(String idToken, String state, String postLogoutRedirectUri)
+    public String buildLogoutUrl(
+            String idToken,
+            String state,
+            String postLogoutRedirectUri,
+            boolean useAlternativeDomain)
             throws URISyntaxException {
-        var logoutUri =
-                new URIBuilder(this.idpUrl + (this.idpUrl.endsWith("/") ? "logout" : "/logout"));
-        logoutUri.addParameter("id_token_hint", idToken);
-        logoutUri.addParameter("state", state);
-        logoutUri.addParameter("post_logout_redirect_uri", postLogoutRedirectUri);
+        URI logoutUri;
+        if (useAlternativeDomain) {
+            logoutUri =
+                    new URI(
+                            this.providerMetadata
+                                    .getEndSessionEndpointURI()
+                                    .toString()
+                                    .replace("oidc", "oidc-orch"));
+        } else {
+            logoutUri = this.providerMetadata.getEndSessionEndpointURI();
+        }
 
-        return logoutUri.build().toString();
+        var uriBuilder = new URIBuilder(logoutUri.toString());
+        uriBuilder.addParameter("id_token_hint", idToken);
+        uriBuilder.addParameter("state", state);
+        uriBuilder.addParameter("post_logout_redirect_uri", postLogoutRedirectUri);
+
+        return uriBuilder.build().toString();
     }
 
     public void validateIdToken(JWT idToken, boolean useAlternativeDomain)
-            throws MalformedURLException {
+            throws MalformedURLException, URISyntaxException {
         LOG.info("Validating ID token");
         ResourceRetriever resourceRetriever = new DefaultResourceRetriever(30000, 30000);
-        var providerMetadata = getProviderMetadata(useAlternativeDomain);
+        var providerMetadata = this.providerMetadata;
+        URL jwksUrl;
+
+        if (useAlternativeDomain) {
+            jwksUrl =
+                    new URI(providerMetadata.getJWKSetURI().toString().replace("oidc", "oidc-orch"))
+                            .toURL();
+        } else {
+            jwksUrl = providerMetadata.getJWKSetURI().toURL();
+        }
         var idTokenValidator =
                 new IDTokenValidator(
                         providerMetadata.getIssuer(),
                         this.clientId,
                         JWSAlgorithm.parse(this.relyingPartyConfig.idTokenSigningAlgorithm()),
-                        providerMetadata.getJWKSetURI().toURL(),
+                        jwksUrl,
                         resourceRetriever);
 
         try {
@@ -411,19 +497,35 @@ public class Oidc {
     public Optional<LogoutTokenClaimsSet> validateLogoutToken(
             JWT logoutToken, boolean useAlternativeDomain) {
         try {
-            var providerMetadata = getProviderMetadata(useAlternativeDomain);
+            var providerMetadata = this.providerMetadata;
+            URL jwksUrl;
+
+            if (useAlternativeDomain) {
+                jwksUrl =
+                        new URI(
+                                        providerMetadata
+                                                .getJWKSetURI()
+                                                .toString()
+                                                .replace("oidc", "oidc-orch"))
+                                .toURL();
+            } else {
+                jwksUrl = providerMetadata.getJWKSetURI().toURL();
+            }
+
             var validator =
                     new LogoutTokenValidator(
                             providerMetadata.getIssuer(),
                             this.clientId,
                             JWSAlgorithm.parse(relyingPartyConfig.idTokenSigningAlgorithm()),
-                            providerMetadata.getJWKSetURI().toURL(),
+                            jwksUrl,
                             new DefaultResourceRetriever(30000, 30000));
 
             return Optional.of(validator.validate(logoutToken));
         } catch (BadJOSEException | JOSEException | MalformedURLException e) {
             LOG.error("Unexpected exception thrown when validating logout token", e);
             return Optional.empty();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -435,14 +537,10 @@ public class Oidc {
         }
     }
 
-    private SignedJWT generateSignedJWT(
-            Scope scopes, String callbackURL, String language, boolean useAlternativeDomain) {
+    private SignedJWT generateSignedJWT(Scope scopes, String callbackURL, String language) {
         var jwtClaimsSet =
                 new JWTClaimsSet.Builder()
-                        .audience(
-                                getProviderMetadata(useAlternativeDomain)
-                                        .getAuthorizationEndpointURI()
-                                        .toString())
+                        .audience(this.providerMetadata.getAuthorizationEndpointURI().toString())
                         .subject(new Subject().getValue())
                         .claim("redirect_uri", callbackURL)
                         .claim("response_type", ResponseType.CODE.toString())
@@ -476,14 +574,5 @@ public class Oidc {
         }
 
         return signedJWT;
-    }
-
-    private OIDCProviderMetadata getProviderMetadata(boolean useAlternativeDomain) {
-        if (useAlternativeDomain && this.alternativeProviderMetadata.isPresent()) {
-            LOG.info("Using alternative domain");
-            return this.alternativeProviderMetadata.get();
-        } else {
-            return this.providerMetadata;
-        }
     }
 }

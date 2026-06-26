@@ -66,7 +66,7 @@ public class OidcTest {
 
     @Test
     void shouldCreateJARWithExpectedUserInfoClaimsWhenNoPkceAttributesProvided()
-            throws ParseException {
+            throws ParseException, URISyntaxException {
         var authorizeRequest =
                 oidc.buildJarAuthorizeRequest(
                         testCallbackUri,
@@ -96,7 +96,7 @@ public class OidcTest {
 
     @Test
     void shouldCreateJARWithExpectedUserInfoClaimsWhenPkceAttributesProvided()
-            throws ParseException {
+            throws ParseException, URISyntaxException {
         var codeChallengeMethod = CodeChallengeMethod.S256;
         var codeVerifier = new CodeVerifier();
 

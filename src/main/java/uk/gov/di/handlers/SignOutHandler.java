@@ -20,12 +20,14 @@ public class SignOutHandler implements Route {
         var relyingPartyConfig =
                 Configuration.getRelyingPartyConfig(request.cookie("relyingParty"));
         var oidcClient = new Oidc(relyingPartyConfig);
+        var useAlternativeDomain = "true".equals(request.cookie("useAlternativeDomain"));
 
         var logoutUri =
                 oidcClient.buildLogoutUrl(
                         request.cookie("idToken"),
                         UUID.randomUUID().toString(),
-                        relyingPartyConfig.postLogoutRedirectUrl());
+                        relyingPartyConfig.postLogoutRedirectUrl(),
+                        useAlternativeDomain);
         response.redirect(logoutUri);
         return null;
     }
