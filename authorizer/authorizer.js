@@ -19,6 +19,19 @@ exports.handler = async(event) => {
             'isAuthorized': true
         };
     }
+
+    // See https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-lambda-authorizer.html
+    const path = event.requestContext.http.path;
+    console.log(path)
+    console.log(event.requestContext.http)
+
+    // Allow access to JWKs endpoints
+    if(path.endsWith("/.well-known/jwks.json")){
+     return {
+                'isAuthorized': true
+            };
+    }
+
     const ipAddress = event.requestContext.http.sourceIp;
     const validIps = [
         '217.196.229.77/32',
