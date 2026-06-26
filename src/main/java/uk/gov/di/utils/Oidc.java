@@ -60,6 +60,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -83,8 +84,43 @@ public class Oidc {
         this.providerMetadata = loadProviderMetadata(relyingPartyConfig.opBaseUrl());
         this.alternativeProviderMetadata =
                 Optional.ofNullable(relyingPartyConfig.alternativeBaseUrl())
-                        .map(this::loadProviderMetadata);
+                        .map(
+                                (altDomain) ->
+                                        this.loadAlternativeProviderMetadata(
+                                                relyingPartyConfig.opBaseUrl(), altDomain));
         this.privateKeyReader = new PrivateKeyReader(relyingPartyConfig.clientPrivateKey());
+    }
+
+    private OIDCProviderMetadata loadAlternativeProviderMetadata(
+            String expectedIssuer, String baseurl) {
+        try {
+            var metadata =
+                    OIDCProviderMetadata.resolve(new Issuer(expectedIssuer), new URL(baseurl));
+            metadata.setAuthorizationEndpointURI(
+                    new URIBuilder(relyingPartyConfig.alternativeBaseUrl())
+                            .setPath("/authorize")
+                            .build());
+            metadata.setTokenEndpointURI(
+                    new URIBuilder(relyingPartyConfig.alternativeBaseUrl())
+                            .setPath("/token")
+                            .build());
+            metadata.setEndSessionEndpointURI(
+                    new URIBuilder(relyingPartyConfig.alternativeBaseUrl())
+                            .setPath("/logout")
+                            .build());
+            metadata.setUserInfoEndpointURI(
+                    new URIBuilder(relyingPartyConfig.alternativeBaseUrl())
+                            .setPath("/userinfo")
+                            .build());
+            metadata.setJWKSetURI(
+                    new URIBuilder(relyingPartyConfig.alternativeBaseUrl())
+                            .setPath("/.well-known/jwks.json")
+                            .build());
+            return metadata;
+        } catch (Exception e) {
+            LOG.error("Unexpected exception thrown when loading provider metadata", e);
+            throw new RuntimeException(e);
+        }
     }
 
     private OIDCProviderMetadata loadProviderMetadata(String baseUrl) {
@@ -138,7 +174,11 @@ public class Oidc {
             var clientAuthentication =
                     Optional.ofNullable(relyingPartyConfig.tokenClientSecret())
                             .map(this::clientSecretPost)
-                            .orElseGet(() -> privateKeyJwt(tokenEndpointURI));
+                            // Supply the real value inside the JWT
+                            .orElseGet(
+                                    () ->
+                                            privateKeyJwt(
+                                                    this.providerMetadata.getTokenEndpointURI()));
 
             var request =
                     new TokenRequest(
@@ -220,7 +260,8 @@ public class Oidc {
                 new OIDCClaimsRequest().withUserInfoClaimsRequest(claimsSetRequest);
         var requestObject =
                 new JWTClaimsSet.Builder()
-                        .audience(endpointURI.toString())
+                        // Hard code to the real value
+                        .audience(this.providerMetadata.getAuthorizationEndpointURI().toString())
                         .claim("redirect_uri", callbackUrl)
                         .claim("response_type", ResponseType.CODE.toString())
                         .claim("scope", Scope.parse(scopes).toString())
@@ -353,9 +394,7 @@ public class Oidc {
         var authRequestBuilder =
                 new AuthorizationRequest.Builder(
                                 new ResponseType(ResponseType.Value.CODE), this.clientId)
-                        .requestObject(
-                                generateSignedJWT(
-                                        scopes, callbackUrl, language, useAlternativeDomain))
+                        .requestObject(generateSignedJWT(scopes, callbackUrl, language))
                         .scope(new Scope(OIDCScopeValue.OPENID))
                         .endpointURI(
                                 getProviderMetadata(useAlternativeDomain)
@@ -384,13 +423,14 @@ public class Oidc {
             throws MalformedURLException {
         LOG.info("Validating ID token");
         ResourceRetriever resourceRetriever = new DefaultResourceRetriever(30000, 30000);
-        var providerMetadata = getProviderMetadata(useAlternativeDomain);
+        var potentiallyAltProviderMetadata = getProviderMetadata(useAlternativeDomain);
         var idTokenValidator =
                 new IDTokenValidator(
-                        providerMetadata.getIssuer(),
+                        // Hardcode this to use the real issuer value
+                        this.providerMetadata.getIssuer(),
                         this.clientId,
                         JWSAlgorithm.parse(this.relyingPartyConfig.idTokenSigningAlgorithm()),
-                        providerMetadata.getJWKSetURI().toURL(),
+                        potentiallyAltProviderMetadata.getJWKSetURI().toURL(),
                         resourceRetriever);
 
         try {
@@ -404,13 +444,14 @@ public class Oidc {
     public Optional<LogoutTokenClaimsSet> validateLogoutToken(
             JWT logoutToken, boolean useAlternativeDomain) {
         try {
-            var providerMetadata = getProviderMetadata(useAlternativeDomain);
+            var potentiallyAltProviderMetadata = getProviderMetadata(useAlternativeDomain);
             var validator =
                     new LogoutTokenValidator(
-                            providerMetadata.getIssuer(),
+                            // Hardcode this to use the real issuer value
+                            this.providerMetadata.getIssuer(),
                             this.clientId,
                             JWSAlgorithm.parse(relyingPartyConfig.idTokenSigningAlgorithm()),
-                            providerMetadata.getJWKSetURI().toURL(),
+                            potentiallyAltProviderMetadata.getJWKSetURI().toURL(),
                             new DefaultResourceRetriever(30000, 30000));
 
             return Optional.of(validator.validate(logoutToken));
@@ -428,14 +469,10 @@ public class Oidc {
         }
     }
 
-    private SignedJWT generateSignedJWT(
-            Scope scopes, String callbackURL, String language, boolean useAlternativeDomain) {
+    private SignedJWT generateSignedJWT(Scope scopes, String callbackURL, String language) {
         var jwtClaimsSet =
                 new JWTClaimsSet.Builder()
-                        .audience(
-                                getProviderMetadata(useAlternativeDomain)
-                                        .getAuthorizationEndpointURI()
-                                        .toString())
+                        .audience(this.providerMetadata.getAuthorizationEndpointURI().toString())
                         .subject(new Subject().getValue())
                         .claim("redirect_uri", callbackURL)
                         .claim("response_type", ResponseType.CODE.toString())
