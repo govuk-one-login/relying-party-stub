@@ -28,7 +28,6 @@ import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.oauth2.sdk.id.State;
-import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
@@ -436,7 +435,6 @@ public class Oidc {
                                 getProviderMetadata(useAlternativeDomain)
                                         .getAuthorizationEndpointURI()
                                         .toString())
-                        .subject(new Subject().getValue())
                         .claim("redirect_uri", callbackURL)
                         .claim("response_type", ResponseType.CODE.toString())
                         .claim("scope", scopes.toString())
