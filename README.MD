@@ -60,22 +60,12 @@ or [here](https://github.com/govuk-one-login/ipv-stubs-common-infra/blob/main/ut
 ## Adding a relying party
 
 The configuration of an existing stub can be updated to include an additional relying party. This can be done by
-updating the JSON blob in the relevant Secrets Manager secret in the correct IPV stubs AWS account (di-ipv-stubs-build
-or di-ipv-stubs-prod).
+updating the JSON blob in the relevant Secrets Manager secret in the correct IPV stubs AWS account (di-ipv-stubs-build for non-prod
+or di-ipv-stubs-prod for prod). See further information on CONFIGURATION above.
 
-To configure an additional relying party in One Login, add a DynamoDB entry to the terraform in the `authentication-api`
-repository, in the
-file `{environment}-stub-clients.tfvar` for all environments except dev (for
-example [for build](https://github.com/govuk-one-login/authentication-api/blob/2e2b4317f4cb0272f74473149aff730bbc844650/ci/terraform/shared/build-stub-clients.tfvars#L101)).
-For the dev environment, add an
-entry [here](https://github.com/govuk-one-login/authentication-api/blob/7dfd3fdeed4cb9358c234d95ee0e0ea4852ca57d/ci/terraform/shared/sandpit.tfvars#L9).
-If `test_client` is set to true, notifications are not sent through Notify.
-
-Once you deploy this terraform, find the terraform state file in S3 for the shared module for the relevant environment.
-Take a look at the outputs of this file, specifically `stub_rp_client_credentials`, and you'll find the private key for
-your new client in PEM format. Search the file for this string, and you'll be able to find the private key in PKCS8
-format.
-You can check you have the right format as it will start with `-----BEGIN PRIVATE KEY-----`.
+To configure an additional relying party in One Login, add a DynamoDB entry to the `{environment}-client-registry` table,
+in the `di-orchestration-{environment}` AWS account. If you would like to create a new key pair, follow the instructions
+[here](https://docs.sign-in.service.gov.uk/before-integrating/set-up-your-public-and-private-keys/#set-up-your-public-and-private-keys
 
 
 ## Deploying a new copy of the stub
