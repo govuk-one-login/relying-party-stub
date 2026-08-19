@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
 
         maven {
-            url 'https://repo.danubetech.com/repository/maven-public/'
+            url = 'https://repo.danubetech.com/repository/maven-public/'
         }
     }
     // Constraints on transitive dependencies of plugins
@@ -25,13 +25,13 @@ apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'idea'
 
-group 'uk.gov.di'
+group = 'uk.gov.di'
 
 repositories {
     mavenCentral()
 
     maven {
-        url 'https://repo.danubetech.com/repository/maven-public/'
+        url = 'https://repo.danubetech.com/repository/maven-public/'
     }
 }
 
@@ -123,4 +123,6 @@ run {
     }
 }
 
-mainClassName = 'uk.gov.di.App'
+application {
+    mainClass = 'uk.gov.di.App'
+}
