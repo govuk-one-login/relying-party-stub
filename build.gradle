@@ -58,7 +58,7 @@ dependencies {
         }
     }
 
-    implementation(platform("software.amazon.awssdk:bom:2.52.0"))
+    implementation(platform("software.amazon.awssdk:bom:2.52.1"))
     implementation "io.javalin:javalin:7.2.3",
             "io.javalin:javalin-rendering-mustache:7.2.3",
             "com.nimbusds:oauth2-oidc-sdk:11.38.2",
