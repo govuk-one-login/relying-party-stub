@@ -1100,6 +1100,7 @@ Resources:
       AuthorizerResultTtlInSeconds: 60
       IdentitySource:
         - $context.identity.sourceIp
+        - $context.path
       AuthorizerType: REQUEST
       AuthorizerPayloadFormatVersion: 2.0
       EnableSimpleResponses: true
