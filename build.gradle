@@ -9,8 +9,8 @@ buildscript {
     // Constraints on transitive dependencies of plugins
     dependencies {
         constraints {
-            classpath('org.bouncycastle:bcprov-jdk18on:[1.84,)') {
-                because 'CVE-2026-5598 is fixed in org.bouncycastle:bcprov-jdk18on:1.84 and higher'
+            classpath('org.bouncycastle:bcprov-jdk18on:[1.85,)') {
+                because 'a critical alert is fixed in org.bouncycastle:bcprov-jdk18on:1.85 and higher'
             }
         }
     }
