@@ -61,6 +61,7 @@ Metadata:
       ignore_checks:
         - E3031
         - W8003
+        - E3724 # false positive as CodeSigningConfigArn is a supported global
 
 Mappings:
   EnvironmentConfiguration:
