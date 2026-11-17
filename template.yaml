@@ -62,6 +62,7 @@ Metadata:
         - E3031
         - W8003
         - E3724 # false positive as CodeSigningConfigArn is a supported global
+        - W3001
 
 Mappings:
   EnvironmentConfiguration:
