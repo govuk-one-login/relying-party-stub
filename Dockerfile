@@ -15,7 +15,7 @@ COPY --chown=gradle:gradle src src
 COPY --from=scripts /node_modules/jquery/dist/jquery.min.js src/main/resources/public/jquery.js
 RUN gradle clean build installDist --no-daemon
 
-FROM amazoncorretto:26.0.2-alpine3.23@sha256:0f2081ac91b91d03ac212be140051b0e1693b2ace2d60f305b2597e2ec776346 AS runtime
+FROM amazoncorretto:25.0.5-alpine3.23@sha256:9a687aae4a7b816972bf93cfe2f8a5914004bdcce632739f128354f253a381c6 AS runtime
 WORKDIR /home
 COPY --from=build /home/gradle/src/build/install/src .
 
