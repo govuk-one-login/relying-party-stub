@@ -10,6 +10,7 @@ import uk.gov.di.handlers.ExceptionHandler;
 import uk.gov.di.handlers.HomeHandler;
 import uk.gov.di.handlers.InternalServerErrorHandler;
 import uk.gov.di.handlers.JwkHandler;
+import uk.gov.di.handlers.LandingPageHandler;
 import uk.gov.di.handlers.RelyingPartyGetHandler;
 import uk.gov.di.handlers.RelyingPartyPostHandler;
 import uk.gov.di.handlers.SignOutHandler;
@@ -31,6 +32,7 @@ public class OidcRp {
         var exceptionHandler = new ExceptionHandler();
         var relyingPartyGetHandler = new RelyingPartyGetHandler();
         var relyingPartyPostHandler = new RelyingPartyPostHandler();
+        var landingPageHandler = new LandingPageHandler();
 
         Javalin.create(
                         config -> {
@@ -50,6 +52,7 @@ public class OidcRp {
                                     "/backchannel-logout", new BackChannelLogoutHandler()::handle);
                             config.routes.get("/relying-party", relyingPartyGetHandler::handle);
                             config.routes.post("/relying-party", relyingPartyPostHandler::handle);
+                            config.routes.get("/landing-page", landingPageHandler::handle);
                             getClientsPublicKeys()
                                     .forEach(
                                             clientIdAndPubKey ->
